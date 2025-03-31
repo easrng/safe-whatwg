@@ -71,25 +71,27 @@ function isC0ControlPercentEncode(c: number) {
 }
 
 // https://url.spec.whatwg.org/#fragment-percent-encode-set
-const extraFragmentPercentEncodeSet = new SafeSet([
-  p(" "),
-  p('"'),
-  p("<"),
-  p(">"),
-  p("`"),
-]);
+const extraFragmentPercentEncodeSet = /* @__PURE__ */ (() =>
+  new SafeSet([
+    p(" "),
+    p('"'),
+    p("<"),
+    p(">"),
+    p("`"),
+  ]))();
 function isFragmentPercentEncode(c: number) {
   return isC0ControlPercentEncode(c) || extraFragmentPercentEncodeSet.has(c);
 }
 
 // https://url.spec.whatwg.org/#query-percent-encode-set
-const extraQueryPercentEncodeSet = new SafeSet([
-  p(" "),
-  p('"'),
-  p("#"),
-  p("<"),
-  p(">"),
-]);
+const extraQueryPercentEncodeSet = /* @__PURE__ */ (() =>
+  new SafeSet([
+    p(" "),
+    p('"'),
+    p("#"),
+    p("<"),
+    p(">"),
+  ]))();
 function isQueryPercentEncode(c: number) {
   return isC0ControlPercentEncode(c) || extraQueryPercentEncodeSet.has(c);
 }
@@ -100,53 +102,57 @@ function isSpecialQueryPercentEncode(c: number) {
 }
 
 // https://url.spec.whatwg.org/#path-percent-encode-set
-const extraPathPercentEncodeSet = new SafeSet([
-  p("?"),
-  p("`"),
-  p("{"),
-  p("}"),
-  p("^"),
-]);
+const extraPathPercentEncodeSet = /* @__PURE__ */ (() =>
+  new SafeSet([
+    p("?"),
+    p("`"),
+    p("{"),
+    p("}"),
+    p("^"),
+  ]))();
 function isPathPercentEncode(c: number) {
   return isQueryPercentEncode(c) || extraPathPercentEncodeSet.has(c);
 }
 
 // https://url.spec.whatwg.org/#userinfo-percent-encode-set
-const extraUserinfoPercentEncodeSet = new SafeSet([
-  p("/"),
-  p(":"),
-  p(";"),
-  p("="),
-  p("@"),
-  p("["),
-  p("\\"),
-  p("]"),
-  p("|"),
-]);
+const extraUserinfoPercentEncodeSet = /* @__PURE__ */ (() =>
+  new SafeSet([
+    p("/"),
+    p(":"),
+    p(";"),
+    p("="),
+    p("@"),
+    p("["),
+    p("\\"),
+    p("]"),
+    p("|"),
+  ]))();
 function isUserinfoPercentEncode(c: number) {
   return isPathPercentEncode(c) || extraUserinfoPercentEncodeSet.has(c);
 }
 
 // https://url.spec.whatwg.org/#component-percent-encode-set
-const extraComponentPercentEncodeSet = new SafeSet([
-  p("$"),
-  p("%"),
-  p("&"),
-  p("+"),
-  p(","),
-]);
+const extraComponentPercentEncodeSet = /* @__PURE__ */ (() =>
+  new SafeSet([
+    p("$"),
+    p("%"),
+    p("&"),
+    p("+"),
+    p(","),
+  ]))();
 function isComponentPercentEncode(c: number) {
   return isUserinfoPercentEncode(c) || extraComponentPercentEncodeSet.has(c);
 }
 
 // https://url.spec.whatwg.org/#application-x-www-form-urlencoded-percent-encode-set
-const extraURLEncodedPercentEncodeSet = new SafeSet([
-  p("!"),
-  p("'"),
-  p("("),
-  p(")"),
-  p("~"),
-]);
+const extraURLEncodedPercentEncodeSet = /* @__PURE__ */ (() =>
+  new SafeSet([
+    p("!"),
+    p("'"),
+    p("("),
+    p(")"),
+    p("~"),
+  ]))();
 function isURLEncodedPercentEncode(c: number) {
   return isComponentPercentEncode(c) || extraURLEncodedPercentEncodeSet.has(c);
 }

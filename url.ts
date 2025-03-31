@@ -846,18 +846,30 @@ class URLSearchParams {
     return this.#listMap.length;
   }
 
-  // from mixinPairIterable:
-
-  forEach!: (
+  forEach(
+    // deno-lint-ignore no-unused-vars
     callbackfn: (value: string, key: string, parent: this) => void,
+    // deno-lint-ignore no-unused-vars
     thisArg?: unknown,
-  ) => void;
-  keys!: () => URLSearchParamsIterator<string>;
-  values!: () => URLSearchParamsIterator<string>;
-  entries!: () => URLSearchParamsIterator<[string, string]>;
-  [SymbolIterator]!: () => URLSearchParamsIterator<[string, string]>;
+  ): void {
+    return implInMixinPairIterable();
+  }
+  keys(): URLSearchParamsIterator<string> {
+    return implInMixinPairIterable();
+  }
+  values(): URLSearchParamsIterator<string> {
+    return implInMixinPairIterable();
+  }
+  entries(): URLSearchParamsIterator<[string, string]> {
+    return implInMixinPairIterable();
+  }
+  [SymbolIterator](): URLSearchParamsIterator<[string, string]> {
+    return implInMixinPairIterable();
+  }
 }
-
+const implInMixinPairIterable = (): never => {
+  throw "implemented in mixinPairIterable";
+};
 webidl.mixinPairIterable(
   "URLSearchParams",
   URLSearchParams,
@@ -867,7 +879,7 @@ webidl.mixinPairIterable(
   1,
 );
 
-webidl.configureInterface(URLSearchParams);
+webidl.configureInterface(URLSearchParams, "URLSearchParams");
 
 webidl.converters["URLSearchParams"] = webidl.createInterfaceConverter(
   "URLSearchParams",
@@ -1285,6 +1297,6 @@ class URL {
   }
 }
 
-webidl.configureInterface(URL);
+webidl.configureInterface(URL, "URL");
 
 export { URL, URLSearchParams };

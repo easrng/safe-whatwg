@@ -1835,16 +1835,21 @@ function mixinPairIterable<
   ObjectDefineProperties(prototype.prototype, properties);
 }
 
-function configureInterface(interface_: { prototype: object; name: string }) {
+function configureInterface<N extends string>(
+  interface_: { prototype: object; name: N },
+  name: N,
+) {
   configureProperties(interface_);
   configureProperties(interface_.prototype);
-  ObjectDefineProperty(interface_.prototype, SymbolToStringTag, {
+  const d = {
     __proto__: null,
-    value: interface_.name,
+    value: name,
     enumerable: false,
     configurable: true,
     writable: false,
-  });
+  };
+  ObjectDefineProperty(interface_.prototype, SymbolToStringTag, d);
+  ObjectDefineProperty(interface_, "name", d);
 }
 
 function configureProperties(obj: object) {
@@ -1876,7 +1881,7 @@ function configureProperties(obj: object) {
   }
 }
 
-const setlikeInner: unique symbol = Symbol("[[set]]") as never;
+const setlikeInner: unique symbol = /* @__PURE__ */ Symbol("[[set]]") as never;
 
 // Ref: https://webidl.spec.whatwg.org/#es-setlike
 function setlike(

@@ -1,6 +1,6 @@
 # safe-whatwg
 
-An implementation of various Web/WHATWG apis, intended to be robust, correct,
+An implementation of various Web/WHATWG APIs, intended to be robust, correct,
 and portable.
 
 ## Implementation status

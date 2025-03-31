@@ -67,81 +67,118 @@ const createSafeIterator = <F>(
   return SafeIterator;
 };
 
-export const ArrayIteratorPrototype = ReflectGetPrototypeOf(
-  // eslint-disable-next-line no-restricted-syntax
-  ArrayPrototype[SymbolIterator](),
-)! as {
-  [SymbolToStringTag]: "Array Iterator";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  next: Iterator<any, any>["next"];
-};
-export const SetIteratorPrototype = ReflectGetPrototypeOf(
-  // deno-lint-ignore prefer-primordials
-  SetPrototypeSymbolIterator(new Set()),
-)! as {
-  [SymbolToStringTag]: "Set Iterator";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  next: Iterator<any, any>["next"];
-};
-export const MapIteratorPrototype = ReflectGetPrototypeOf(
-  // deno-lint-ignore prefer-primordials
-  MapPrototypeSymbolIterator(new Map()),
-)! as {
-  [SymbolToStringTag]: "Map Iterator";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  next: Iterator<any, any>["next"];
-};
-export const StringIteratorPrototype = ReflectGetPrototypeOf(
-  StringPrototypeSymbolIterator(""),
-)! as {
-  [SymbolToStringTag]: "String Iterator";
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  next: Iterator<any, any>["next"];
-};
+export const ArrayIteratorPrototype =
+  /* @__PURE__ */ (() =>
+    ReflectGetPrototypeOf(
+      // eslint-disable-next-line no-restricted-syntax
+      ArrayPrototype[SymbolIterator](),
+    )! as {
+      [SymbolToStringTag]: "Array Iterator";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      next: Iterator<any, any>["next"];
+    })();
+export const SetIteratorPrototype =
+  /* @__PURE__ */ (() =>
+    ReflectGetPrototypeOf(
+      // deno-lint-ignore prefer-primordials
+      SetPrototypeSymbolIterator(new Set()),
+    )! as {
+      [SymbolToStringTag]: "Set Iterator";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      next: Iterator<any, any>["next"];
+    })();
+export const MapIteratorPrototype =
+  /* @__PURE__ */ (() =>
+    ReflectGetPrototypeOf(
+      // deno-lint-ignore prefer-primordials
+      MapPrototypeSymbolIterator(new Map()),
+    )! as {
+      [SymbolToStringTag]: "Map Iterator";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      next: Iterator<any, any>["next"];
+    })();
+export const StringIteratorPrototype =
+  /* @__PURE__ */ (() =>
+    ReflectGetPrototypeOf(
+      StringPrototypeSymbolIterator(""),
+    )! as {
+      [SymbolToStringTag]: "String Iterator";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      next: Iterator<any, any>["next"];
+    })();
 
-// @ts-expect-error i'll type this later
-export const TypedArrayPrototype = ReflectGetPrototypeOf(Uint8Array)!.prototype;
-export const TypedArrayPrototypeGetSymbolToStringTag = uncurryThis(
-  ReflectGetOwnPropertyDescriptor(TypedArrayPrototype, SymbolToStringTag)!.get!,
-);
-export const TypedArrayPrototypeGetBuffer = uncurryThis(
-  ReflectGetOwnPropertyDescriptor(TypedArrayPrototype, "buffer")!.get!,
-);
-export const TypedArrayPrototypeGetByteLength = uncurryThis(
-  ReflectGetOwnPropertyDescriptor(TypedArrayPrototype, "byteLength")!.get!,
-);
-export const TypedArrayPrototypeGetByteOffset = uncurryThis(
-  ReflectGetOwnPropertyDescriptor(TypedArrayPrototype, "byteOffset")!.get!,
-);
-export const TypedArrayPrototypeSubarray = uncurryThis(
-  TypedArrayPrototype.subarray,
-);
-export const ArrayPrototypeMap = uncurryThis(ArrayPrototype.map) as <T, U>(
-  self: T[],
-  callbackfn: (value: T, index: number, array: T[]) => U,
-) => U[];
+export const TypedArrayPrototype =
+  // @ts-expect-error i'll type this later
+  /* @__PURE__ */ (() => ReflectGetPrototypeOf(Uint8Array)!.prototype)();
+export const TypedArrayPrototypeGetSymbolToStringTag =
+  /* @__PURE__ */ (() =>
+    uncurryThis(
+      ReflectGetOwnPropertyDescriptor(TypedArrayPrototype, SymbolToStringTag)!
+        .get!,
+    ))();
+export const TypedArrayPrototypeGetBuffer = /* @__PURE__ */ (() =>
+  uncurryThis(
+    ReflectGetOwnPropertyDescriptor(TypedArrayPrototype, "buffer")!.get!,
+  ))();
+export const TypedArrayPrototypeGetByteLength =
+  /* @__PURE__ */ (() =>
+    uncurryThis(
+      ReflectGetOwnPropertyDescriptor(TypedArrayPrototype, "byteLength")!.get!,
+    ))();
+export const TypedArrayPrototypeGetByteOffset =
+  /* @__PURE__ */ (() =>
+    uncurryThis(
+      ReflectGetOwnPropertyDescriptor(TypedArrayPrototype, "byteOffset")!.get!,
+    ))();
+export const TypedArrayPrototypeSubarray = /* @__PURE__ */ (() =>
+  uncurryThis(
+    TypedArrayPrototype.subarray,
+  ))();
+export const ArrayPrototypeMap = /* @__PURE__ */ (() =>
+  uncurryThis(
+    ArrayPrototype.map,
+  ) as <T, U>(
+    self: T[],
+    callbackfn: (value: T, index: number, array: T[]) => U,
+  ) => U[])();
 
-const ArrayIteratorPrototypeNext = uncurryThis(ArrayIteratorPrototype.next);
-const SetIteratorPrototypeNext = uncurryThis(SetIteratorPrototype.next);
-const MapIteratorPrototypeNext = uncurryThis(MapIteratorPrototype.next);
-const StringIteratorPrototypeNext = uncurryThis(StringIteratorPrototype.next);
+const ArrayIteratorPrototypeNext = /* @__PURE__ */ (() =>
+  uncurryThis(
+    ArrayIteratorPrototype.next,
+  ))();
+const SetIteratorPrototypeNext = /* @__PURE__ */ (() =>
+  uncurryThis(
+    SetIteratorPrototype.next,
+  ))();
+const MapIteratorPrototypeNext = /* @__PURE__ */ (() =>
+  uncurryThis(
+    MapIteratorPrototype.next,
+  ))();
+const StringIteratorPrototypeNext = /* @__PURE__ */ (() =>
+  uncurryThis(
+    StringIteratorPrototype.next,
+  ))();
 
-export const SafeArrayIterator = createSafeIterator(
-  ArrayPrototypeSymbolIterator,
-  ArrayIteratorPrototypeNext,
-);
-export const SafeSetIterator = createSafeIterator(
-  SetPrototypeSymbolIterator,
-  SetIteratorPrototypeNext,
-);
-export const SafeMapIterator = createSafeIterator(
-  MapPrototypeSymbolIterator,
-  MapIteratorPrototypeNext,
-);
-export const SafeStringIterator = createSafeIterator(
-  StringPrototypeSymbolIterator,
-  StringIteratorPrototypeNext,
-);
+export const SafeArrayIterator = /* @__PURE__ */ (() =>
+  createSafeIterator(
+    ArrayPrototypeSymbolIterator,
+    ArrayIteratorPrototypeNext,
+  ))();
+export const SafeSetIterator = /* @__PURE__ */ (() =>
+  createSafeIterator(
+    SetPrototypeSymbolIterator,
+    SetIteratorPrototypeNext,
+  ))();
+export const SafeMapIterator = /* @__PURE__ */ (() =>
+  createSafeIterator(
+    MapPrototypeSymbolIterator,
+    MapIteratorPrototypeNext,
+  ))();
+export const SafeStringIterator = /* @__PURE__ */ (() =>
+  createSafeIterator(
+    StringPrototypeSymbolIterator,
+    StringIteratorPrototypeNext,
+  ))();
 
 const copyProps = (src: object, dest: object) => {
   ArrayPrototypeForEach(ReflectOwnKeys(src), (key) => {
@@ -198,7 +235,7 @@ export const makeSafe = <T extends Constructor>(
 // methods later.
 // Defining the `constructor` is necessary here to avoid the default
 // constructor which uses the user-mutable `%ArrayIteratorPrototype%.next`.
-export const SafeMap = makeSafe(
+export const SafeMap = /* @__PURE__ */ makeSafe(
   Map,
   class SafeMap<K, V> extends Map<K, V> {
     constructor(i?: [K, V][]) {
@@ -211,68 +248,73 @@ export const SafeMap = makeSafe(
   },
 );
 export type SafeWeakMap<K extends WeakKey, V> = WeakMap<K, V>;
-export const SafeWeakMap = makeSafe(
-  WeakMap,
-  class SafeWeakMap extends WeakMap {
-    constructor(i?: unknown[]) {
-      if (i == null) {
-        super();
-        return;
+export const SafeWeakMap = /* @__PURE__ */ (() =>
+  makeSafe(
+    WeakMap,
+    class SafeWeakMap extends WeakMap {
+      constructor(i?: unknown[]) {
+        if (i == null) {
+          super();
+          return;
+        }
+        // @ts-expect-error idk why but it's picking the wrong overload
+        super(new SafeArrayIterator(i));
       }
-      // @ts-expect-error idk why but it's picking the wrong overload
-      super(new SafeArrayIterator(i));
-    }
-  },
-);
+    },
+  ))();
 
-export const SafeSet = makeSafe(
-  Set,
-  class SafeSet extends Set {
-    constructor(i?: unknown) {
-      if (i == null) {
-        super();
-        return;
+export const SafeSet = /* @__PURE__ */ (() =>
+  makeSafe(
+    Set,
+    class SafeSet extends Set {
+      constructor(i?: unknown) {
+        if (i == null) {
+          super();
+          return;
+        }
+        // @ts-expect-error idk why but it's picking the wrong overload
+        super(new SafeArrayIterator(i));
       }
-      // @ts-expect-error idk why but it's picking the wrong overload
-      super(new SafeArrayIterator(i));
-    }
-  },
-);
-export const SafeWeakSet = makeSafe(
-  WeakSet,
-  class SafeWeakSet extends WeakSet {
-    constructor(i?: WeakKey[]) {
-      if (i == null) {
-        super();
-        return;
+    },
+  ))();
+export const SafeWeakSet = /* @__PURE__ */ (() =>
+  makeSafe(
+    WeakSet,
+    class SafeWeakSet extends WeakSet {
+      constructor(i?: WeakKey[]) {
+        if (i == null) {
+          super();
+          return;
+        }
+        super(new SafeArrayIterator(i));
       }
-      super(new SafeArrayIterator(i));
-    }
-  },
-);
+    },
+  ))();
 
-export const SafeRegExp = makeSafe(
-  RegExp,
-  class SafeRegExp extends RegExp {
-    constructor(pattern: RegExp | string, flags?: string) {
-      super(pattern, flags);
-    }
-  },
-);
+export const SafeRegExp = /* @__PURE__ */ (() =>
+  makeSafe(
+    RegExp,
+    class SafeRegExp extends RegExp {
+      constructor(pattern: RegExp | string, flags?: string) {
+        super(pattern, flags);
+      }
+    },
+  ))();
 
-const SafePromise = makeSafe(
-  Promise,
-  class SafePromise<T> extends Promise<T> {
-    constructor(
-      executor: (
-        resolve: (value: T | PromiseLike<T>) => void,
-        reject: (reason?: unknown) => void,
-      ) => void,
-    ) {
-      super(executor);
-    }
-  },
-);
+const SafePromise = /* @__PURE__ */ (() =>
+  makeSafe(
+    Promise,
+    class SafePromise<T> extends Promise<T> {
+      constructor(
+        executor: (
+          resolve: (value: T | PromiseLike<T>) => void,
+          reject: (reason?: unknown) => void,
+        ) => void,
+      ) {
+        super(executor);
+      }
+    },
+  ))();
 
 export const ArrayPrototypeToString = (thisArray: unknown[]) =>
   ArrayPrototypeJoin(thisArray);
