@@ -1,0 +1,16 @@
+{
+  "name": "@easrng/safe-whatwg",
+  "version": "0.0.1",
+  "exports": {
+    "./url": "./url.ts"
+  },
+  "lint": {
+    "rules": {
+      "include": ["prefer-primordials"]
+    }
+  },
+  "tasks": {
+    "test": "deno test --allow-read=_internal/tests/web-platform-tests",
+    "check": "deno lint && deno check ./url.ts && deno fmt --check"
+  }
+}
