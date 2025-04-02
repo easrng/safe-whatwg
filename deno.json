@@ -1,6 +1,6 @@
 {
   "name": "@easrng/safe-whatwg",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "exports": {
     "./url": "./url.ts"
   },
@@ -11,6 +11,17 @@
   },
   "tasks": {
     "test": "deno test --allow-read=_internal/tests/web-platform-tests",
-    "check": "deno lint && deno check ./url.ts && deno fmt --check"
+    "check": "deno lint && deno check ./url.ts && deno fmt --check",
+    "update:mapping": "deno run --allow-net=cdn.jsdelivr.net --allow-write=_internal/url/mapping-table.js ./_internal/url/update-mapping-table.ts",
+    "update:regex": "deno run --allow-net=unicode.org --allow-write=_internal/url/regexes.ts _internal/url/update-regexes.ts",
+    "update": {
+      "dependencies": ["update:regex", "update:mapping"]
+    }
+  },
+  "publish": {
+    "exclude": [
+      "_internal/tests",
+      "_internal/**/update-*"
+    ]
   }
 }

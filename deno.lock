@@ -2,6 +2,9 @@
   "version": "4",
   "specifiers": {
     "npm:@types/node@*": "22.12.0",
+    "npm:@unicode/unicode-15.0.0@*": "1.6.5",
+    "npm:@unicode/unicode-16.0.0@*": "1.6.5",
+    "npm:regenerate@1.4.2": "1.4.2",
     "npm:tr46@5.0.0": "5.0.0",
     "npm:tr46@5.1.0": "5.1.0",
     "npm:whatwg-url@*": "14.0.0"
@@ -13,8 +16,17 @@
         "undici-types"
       ]
     },
+    "@unicode/unicode-15.0.0@1.6.5": {
+      "integrity": "sha512-eautd3KG0MczbL9fRaHlOn+4nzdD82mV5Y3gbqFsLf4cgO8PY0nv62PgcYfdFq+95d6Apmv52eWTll1xamLkxQ=="
+    },
+    "@unicode/unicode-16.0.0@1.6.5": {
+      "integrity": "sha512-r+ONMCgl+K2UWPmEbjN+aqjiLkjh1Zattq8OKYCbFoslwWFc+ysAGQR4h3YOtNvVtuiZSd4O1brRE7cp0wn6Aw=="
+    },
     "punycode@2.3.1": {
       "integrity": "sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg=="
+    },
+    "regenerate@1.4.2": {
+      "integrity": "sha512-zrceR/XhGYU/d/opr2EKO7aRHUeiBI8qjtfHqADTwZd6Szfy16la6kqD0MIUs5z5hx6AaKa+PixpPrR289+I0A=="
     },
     "tr46@5.0.0": {
       "integrity": "sha512-tk2G5R2KRwBd+ZN0zaEXpmzdKyOYksXwywulIX95MBODjSzMIuQnQ3m8JxgbhnL1LeVo7lqQKsYa1O3Htl7K5g==",
