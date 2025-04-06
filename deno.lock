@@ -5,9 +5,7 @@
     "npm:@unicode/unicode-15.0.0@*": "1.6.5",
     "npm:@unicode/unicode-16.0.0@*": "1.6.5",
     "npm:regenerate@1.4.2": "1.4.2",
-    "npm:tr46@5.0.0": "5.0.0",
-    "npm:tr46@5.1.0": "5.1.0",
-    "npm:whatwg-url@*": "14.0.0"
+    "npm:whatwg-url@14.2.0": "14.2.0"
   },
   "npm": {
     "@types/node@22.12.0": {
@@ -28,12 +26,6 @@
     "regenerate@1.4.2": {
       "integrity": "sha512-zrceR/XhGYU/d/opr2EKO7aRHUeiBI8qjtfHqADTwZd6Szfy16la6kqD0MIUs5z5hx6AaKa+PixpPrR289+I0A=="
     },
-    "tr46@5.0.0": {
-      "integrity": "sha512-tk2G5R2KRwBd+ZN0zaEXpmzdKyOYksXwywulIX95MBODjSzMIuQnQ3m8JxgbhnL1LeVo7lqQKsYa1O3Htl7K5g==",
-      "dependencies": [
-        "punycode"
-      ]
-    },
     "tr46@5.1.0": {
       "integrity": "sha512-IUWnUK7ADYR5Sl1fZlO1INDUhVhatWl7BtJWsIhwJ0UAK7ilzzIa8uIqOO/aYVWHZPJkKbEL+362wrzoeRF7bw==",
       "dependencies": [
@@ -46,10 +38,10 @@
     "webidl-conversions@7.0.0": {
       "integrity": "sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g=="
     },
-    "whatwg-url@14.0.0": {
-      "integrity": "sha512-1lfMEm2IEr7RIV+f4lUNPOqfFL+pO+Xw3fJSqmjX9AbXcXcYOkCe1P6+9VBZB6n94af16NfZf+sSk0JCBZC9aw==",
+    "whatwg-url@14.2.0": {
+      "integrity": "sha512-De72GdQZzNTUBBChsXueQUnPKDkg/5A5zp7pFDuQAj5UFoENpiACU0wlCvzpAGnTkj++ihpKwKyYewn/XNUbKw==",
       "dependencies": [
-        "tr46@5.0.0",
+        "tr46",
         "webidl-conversions"
       ]
     }

@@ -10,6 +10,13 @@ import {
   basicURLParse,
   cannotHaveAUsernamePasswordPort,
   hasAnOpaquePath,
+  parseFragment,
+  parseHost,
+  parseHostName,
+  parsePathStart,
+  parsePort,
+  parseQuery,
+  parseSchemeStart,
   serializeHost,
   serializePath,
   serializeURL,
@@ -967,7 +974,7 @@ class URL {
       instance!.#urlRecord.query = "";
       basicURLParse(value!, {
         url: instance!.#urlRecord,
-        stateOverride: "query",
+        stateOverride: parseQuery,
       });
     };
   }
@@ -1046,7 +1053,10 @@ class URL {
 
     const input = value[0] === "#" ? StringPrototypeSlice(value, 1) : value;
     this.#urlRecord.fragment = "";
-    basicURLParse(input, { url: this.#urlRecord, stateOverride: "fragment" });
+    basicURLParse(input, {
+      url: this.#urlRecord,
+      stateOverride: parseFragment,
+    });
   }
 
   /** @return {string} */
@@ -1075,7 +1085,7 @@ class URL {
       return;
     }
 
-    basicURLParse(value, { url: this.#urlRecord, stateOverride: "host" });
+    basicURLParse(value, { url: this.#urlRecord, stateOverride: parseHost });
   }
 
   /** @return {string} */
@@ -1098,7 +1108,10 @@ class URL {
       return;
     }
 
-    basicURLParse(value, { url: this.#urlRecord, stateOverride: "hostname" });
+    basicURLParse(value, {
+      url: this.#urlRecord,
+      stateOverride: parseHostName,
+    });
   }
 
   get #href(): string {
@@ -1168,7 +1181,7 @@ class URL {
       this.#urlRecord.path = [];
       basicURLParse(value, {
         url: this.#urlRecord,
-        stateOverride: "path start",
+        stateOverride: parsePathStart,
       });
     } catch {
       /* pass */
@@ -1195,7 +1208,7 @@ class URL {
     if (value === "") {
       this.#urlRecord.port = null;
     } else {
-      basicURLParse(value, { url: this.#urlRecord, stateOverride: "port" });
+      basicURLParse(value, { url: this.#urlRecord, stateOverride: parsePort });
     }
   }
 
@@ -1212,7 +1225,7 @@ class URL {
     try {
       basicURLParse(`${value}:`, {
         url: this.#urlRecord,
-        stateOverride: "scheme start",
+        stateOverride: parseSchemeStart,
       });
     } catch {
       /* pass */
@@ -1249,7 +1262,7 @@ class URL {
 
       const input = value[0] === "?" ? StringPrototypeSlice(value, 1) : value;
       url.query = "";
-      basicURLParse(input, { url, stateOverride: "query" });
+      basicURLParse(input, { url, stateOverride: parseQuery });
       this.#updateSearchParams();
     } catch {
       /* pass */

@@ -3,14 +3,10 @@
 import { punycodeDecode, punycodeEncode } from "./punycode.ts";
 import mappingTable from "./mapping-table.js";
 import {
-  ArrayFrom,
-  ArrayIsArray,
   ArrayPrototypeIndexOf,
   ArrayPrototypeJoin,
   ArrayPrototypeSlice,
-  MathFloor,
   ObjectCreate,
-  ReflectSetPrototypeOf,
   RegExpPrototypeTest,
   StringPrototypeCodePointAt,
   StringPrototypeEndsWith,
@@ -20,11 +16,7 @@ import {
   StringPrototypeSplit,
   StringPrototypeStartsWith,
 } from "../primordials.js";
-import {
-  ArrayPrototypeMap,
-  SafeRegExp,
-  SafeStringIterator,
-} from "../primordial-utils.ts";
+import { ArrayPrototypeMap, SafeRegExp } from "../primordial-utils.ts";
 import {
   bidiDomain,
   bidiS1LTR,
@@ -39,6 +31,7 @@ import {
   combiningMarks,
   validZWNJ,
 } from "./regexes.ts";
+import { codePointStrings } from "../codepoints.ts";
 
 const STATUS_MAPPING = {
   mapped: 1,
@@ -56,21 +49,23 @@ function containsNonASCII(str: string) {
   return RegExpPrototypeTest(nonASCII, str);
 }
 
+const mappingTableEnd = mappingTable.length - 1;
+
 function findStatus(
   val: number,
 ) {
   let start = 0;
-  let end = mappingTable.length - 1;
+  let end = mappingTableEnd;
 
   while (start <= end) {
-    const mid = MathFloor((start + end) / 2);
+    const mid = ~~((start + end) / 2);
 
     const target = mappingTable[mid]!;
-    const min = ArrayIsArray(target[0]) ? target[0][0] : target[0];
-    const max = ArrayIsArray(target[0]) ? target[0][1] : target[0];
+    const min = typeof target[0] === "number" ? target[0] : target[0][0];
+    const max = typeof target[0] === "number" ? target[0] : target[0][1];
 
     if (min <= val && max >= val) {
-      return ArrayPrototypeSlice(target, 1);
+      return target;
     } else if (min > val) {
       end = mid - 1;
     } else {
@@ -87,8 +82,10 @@ function mapChars(
 ) {
   let processed = "";
 
-  for (const ch of new SafeStringIterator(domainName)) {
-    const { 0: status, 1: mapping } = findStatus(
+  const codePoints = codePointStrings(domainName);
+  for (let i = 0; i < codePoints.length; i++) {
+    const ch = codePoints[i];
+    const { 1: status, 2: mapping } = findStatus(
       StringPrototypeCodePointAt(ch, 0)!,
     )!;
 
@@ -142,10 +139,8 @@ function validateLabel(
     return false;
   }
 
-  const codePoints: Record<number, string> & { length: number } = ArrayFrom(
-    new SafeStringIterator(label),
-  );
-  ReflectSetPrototypeOf(codePoints, null);
+  const codePoints: Record<number, string> & { length: number } =
+    codePointStrings(label);
 
   // "2. If CheckHyphens, the label must not contain a U+002D HYPHEN-MINUS character in both the
   // third and fourth positions."
@@ -182,7 +177,7 @@ function validateLabel(
   for (let i = 0; i < codePoints.length; i++) {
     const ch = codePoints[i]!;
     const codePoint = StringPrototypeCodePointAt(ch, 0)!;
-    const { 0: status } = findStatus(codePoint)!;
+    const { 1: status } = findStatus(codePoint)!;
     if (transitionalProcessing) {
       // "For Transitional Processing (deprecated), each value must be valid."
       if (status !== STATUS_MAPPING.valid) {

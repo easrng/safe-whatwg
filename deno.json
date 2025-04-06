@@ -1,6 +1,6 @@
 {
   "name": "@easrng/safe-whatwg",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "exports": {
     "./url": "./url.ts"
   },
