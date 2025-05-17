@@ -343,6 +343,16 @@ function createLongLongConversion(
 }
 
 export interface Converters {
+  TextDecoderOptions(
+    options: TextDecoderOptions,
+    prefix: string,
+    arg2: string,
+  ): TextDecoderOptions;
+  TextDecodeOptions(
+    options: TextDecodeOptions,
+    prefix: string,
+    arg2: string,
+  ): TextDecodeOptions;
   any(v: unknown): unknown;
   /**
    * Convert a value into a `boolean` (bool).
@@ -1166,7 +1176,8 @@ export interface DictionaryMember {
     v: unknown,
     prefix?: string,
     context?: string,
-    opts?: unknown,
+    // deno-lint-ignore no-explicit-any
+    opts?: any,
   ) => unknown;
   defaultValue?: unknown;
   required?: boolean;

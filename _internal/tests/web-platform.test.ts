@@ -1,36 +1,40 @@
 // deno-lint-ignore-file prefer-primordials
 "use strict";
-import path from "node:path";
+import path, { dirname } from "node:path";
 import fs from "node:fs";
 import vm from "node:vm";
 import assert from "node:assert";
 import { directlyRunnableTests, resourceDependentTests } from "./get_wpt.ts";
 import { URL, URLSearchParams } from "../../url.ts";
+import { TextDecoder, TextEncoder } from "../../encoding.ts";
+import encodings_table from "https://encoding.spec.whatwg.org/encodings.json" with {
+  type: "json",
+};
 
 import {
   isSpecialQueryPercentEncode,
   utf8PercentEncodeString,
 } from "../url/percent-encoding.ts";
 
-import idnaTestV2Data from "./web-platform-tests/resources/IdnaTestV2.json" with {
+import idnaTestV2Data from "./web-platform-tests/url/resources/IdnaTestV2.json" with {
   type: "json",
 };
-import idnaTestV2RemovedData from "./web-platform-tests/resources/IdnaTestV2-removed.json" with {
+import idnaTestV2RemovedData from "./web-platform-tests/url/resources/IdnaTestV2-removed.json" with {
   type: "json",
 };
-import urlTestData from "./web-platform-tests/resources/urltestdata.json" with {
+import urlTestData from "./web-platform-tests/url/resources/urltestdata.json" with {
   type: "json",
 };
-import urlTestDataJavaScriptOnly from "./web-platform-tests/resources/urltestdata-javascript-only.json" with {
+import urlTestDataJavaScriptOnly from "./web-platform-tests/url/resources/urltestdata-javascript-only.json" with {
   type: "json",
 };
-import settersData from "./web-platform-tests/resources/setters_tests.json" with {
+import settersData from "./web-platform-tests/url/resources/setters_tests.json" with {
   type: "json",
 };
-import percentEncodingData from "./web-platform-tests/resources/percent-encoding.json" with {
+import percentEncodingData from "./web-platform-tests/url/resources/percent-encoding.json" with {
   type: "json",
 };
-import toASCIIData from "./web-platform-tests/resources/toascii.json" with {
+import toASCIIData from "./web-platform-tests/url/resources/toascii.json" with {
   type: "json",
 };
 import { makeSafe } from "../primordial-utils.ts";
@@ -41,47 +45,45 @@ const str = (s: string) =>
       `\\u${u.codePointAt(0)!.toString(16).padStart(4, "0").toUpperCase()}`)
   }'`;
 
-Deno.test("Directly-runnable web platform tests", async (t) => {
-  for (const testFile of directlyRunnableTests) {
-    await runWPT(testFile, t.step);
-  }
-});
+for (const testFile of directlyRunnableTests) {
+  await runWPT(testFile, Deno.test);
+}
 
-Deno.test("Data file-based web platform tests", async (t) => {
+{
   assert.deepStrictEqual(
     resourceDependentTests,
     [
-      "IdnaTestV2.window.js",
-      "IdnaTestV2-removed.window.js",
-      "url-constructor.any.js",
-      "url-origin.any.js",
-      "url-setters.any.js",
+      "url/IdnaTestV2.window.js",
+      "url/IdnaTestV2-removed.window.js",
+      "url/url-constructor.any.js",
+      "url/url-origin.any.js",
+      "url/url-setters.any.js",
     ],
     "The list of resource-dependent tests should be updated if new tests are added",
   );
 
-  await runWPT("IdnaTestV2.window.js", t.step, (sandbox) => {
+  await runWPT("url/IdnaTestV2.window.js", Deno.test, (sandbox) => {
     sandbox.runTests(idnaTestV2Data);
   });
 
-  await runWPT("IdnaTestV2-removed.window.js", t.step, (sandbox) => {
+  await runWPT("url/IdnaTestV2-removed.window.js", Deno.test, (sandbox) => {
     sandbox.runTests(idnaTestV2RemovedData);
   });
 
-  await runWPT("url-constructor.any.js", t.step, (sandbox) => {
+  await runWPT("url/url-constructor.any.js", Deno.test, (sandbox) => {
     sandbox.runURLTests(urlTestData);
     sandbox.runURLTests(urlTestDataJavaScriptOnly);
   });
 
-  await runWPT("url-origin.any.js", t.step, (sandbox) => {
+  await runWPT("url/url-origin.any.js", Deno.test, (sandbox) => {
     sandbox.runURLTests(urlTestData);
     sandbox.runURLTests(urlTestDataJavaScriptOnly);
   });
 
-  await runWPT("url-setters.any.js", t.step, (sandbox) => {
+  await runWPT("url/url-setters.any.js", Deno.test, (sandbox) => {
     sandbox.runURLSettersTests(settersData);
   });
-});
+}
 
 Deno.test("Manually recreated web platform tests", async (t) => {
   // Last sync:
@@ -191,7 +193,7 @@ function runWPT(
   test: (
     name: string,
     fn: (t: Deno.TestContext) => void | Promise<void>,
-  ) => Promise<boolean>,
+  ) => unknown,
   extraAction = (_sandbox: vm.Context) => {},
 ) {
   return test(testFile, async (t) => {
@@ -205,10 +207,51 @@ function runWPT(
     let chain = Promise.resolve(true);
 
     const sandbox = vm.createContext({
+      get self() {
+        return this;
+      },
+      encodings_table,
+      createBuffer: (() => {
+        // See https://github.com/whatwg/html/issues/5380 for why not `new SharedArrayBuffer()`
+        let sabConstructor;
+        try {
+          sabConstructor =
+            new WebAssembly.Memory({ shared: true, initial: 0, maximum: 0 })
+              .buffer.constructor;
+        } catch {
+          sabConstructor = null;
+        }
+        // @ts-expect-error not typing this
+        return (type, length, opts) => {
+          if (type === "ArrayBuffer") {
+            return new ArrayBuffer(length, opts);
+          } else if (type === "SharedArrayBuffer") {
+            if (sabConstructor && sabConstructor.name !== "SharedArrayBuffer") {
+              throw new Error(
+                "WebAssembly.Memory does not support shared:true",
+              );
+            }
+            // @ts-expect-error not typing this
+            return new sabConstructor(length, opts);
+          } else {
+            throw new Error("type has to be ArrayBuffer or SharedArrayBuffer");
+          }
+        };
+      })(),
+      MessageChannel: class {
+        port1 = {
+          postMessage(v: unknown, transferList: readonly ArrayBuffer[]) {
+            structuredClone(v, { transfer: transferList });
+          },
+        };
+      },
+      TextEncoder,
+      TextDecoder,
       URL,
       URLSearchParams,
       DOMException,
-      fetch: fakeFetch,
+      fetch: fakeFetch.bind(dirname(filePath)),
+      format_value: Deno.inspect,
 
       test(func: () => void, name?: string) {
         if (name?.includes("FormData")) return;
@@ -261,6 +304,16 @@ function runWPT(
         // Don't do any keying stuff.
         testRunnerFunc(func, name);
       },
+
+      setup(fn: () => void) {
+        fn();
+      },
+      subsetTest(
+        testFunc: (...args: unknown[]) => unknown,
+        ...args: unknown[]
+      ) {
+        return testFunc(...args);
+      },
     });
 
     try {
@@ -281,10 +334,9 @@ function runWPT(
   });
 }
 
-function fakeFetch(url: string) {
+function fakeFetch(this: string, url: string) {
   const filePath = path.resolve(
-    import.meta.dirname!,
-    "web-platform-tests",
+    this,
     url,
   );
   return Promise.resolve({

@@ -134,6 +134,14 @@ export const TypedArrayPrototypeSubarray = /* @__PURE__ */ (() =>
   uncurryThis(
     TypedArrayPrototype.subarray,
   ))();
+export const TypedArrayPrototypeSlice = /* @__PURE__ */ (() =>
+  uncurryThis(
+    TypedArrayPrototype.slice,
+  ))();
+export const TypedArrayPrototypeSet = /* @__PURE__ */ (() =>
+  uncurryThis(
+    TypedArrayPrototype.set,
+  ))();
 export const ArrayPrototypeMap = /* @__PURE__ */ (() =>
   uncurryThis(
     ArrayPrototype.map,
@@ -434,7 +442,9 @@ export function isNonSharedArrayBuffer(value: unknown) {
     return false;
   }
 }
-export function isSharedArrayBuffer(value: unknown) {
+export function isSharedArrayBuffer(
+  value: unknown,
+): value is SharedArrayBuffer {
   try {
     SharedArrayBufferPrototypeGetByteLength(value);
     return true;

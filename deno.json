@@ -1,16 +1,17 @@
 {
   "name": "@easrng/safe-whatwg",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "exports": {
-    "./url": "./url.ts"
+    "./url": "./url.ts",
+    "./encoding": "./encoding.ts"
   },
   "lint": {
     "rules": {
-      "include": ["prefer-primordials"]
+      "include": ["prefer-primordials", "no-undef"]
     }
   },
   "tasks": {
-    "test": "deno test --allow-read=_internal/tests/web-platform-tests",
+    "test": "deno test --allow-read=_internal/tests/web-platform-tests --allow-import=encoding.spec.whatwg.org:443,jsr.io:443",
     "check": "deno lint && deno check ./url.ts && deno fmt --check",
     "update:mapping": "deno run --allow-net=cdn.jsdelivr.net --allow-write=_internal/url/mapping-table.js ./_internal/url/update-mapping-table.ts",
     "update:regex": "deno run --allow-net=unicode.org --allow-write=_internal/url/regexes.ts _internal/url/update-regexes.ts",
@@ -19,9 +20,6 @@
     }
   },
   "publish": {
-    "exclude": [
-      "_internal/tests",
-      "_internal/**/update-*"
-    ]
+    "exclude": ["_internal/tests", "_internal/**/update-*"]
   }
 }

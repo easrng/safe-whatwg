@@ -45,5 +45,8 @@
         "webidl-conversions"
       ]
     }
+  },
+  "remote": {
+    "https://encoding.spec.whatwg.org/encodings.json": "078212b3697f60b81225b6671bd9da2604497abff0aa8e96e4d46605c02ac9e7"
   }
 }
