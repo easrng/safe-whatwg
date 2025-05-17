@@ -10,7 +10,7 @@
 const commitHash = "0557f15b1edaed64ca89d864a8be9ffd82c888ec";
 
 const prefix =
-  `http://cdn.jsdelivr.net/gh/web-platform-tests/wpt@${commitHash}/`;
+  `https://cdn.jsdelivr.net/gh/web-platform-tests/wpt@${commitHash}/`;
 const targetDir = new URL("./web-platform-tests/", import.meta.url);
 
 // These resources we download, but the test runner doesn't need to know about them.
