@@ -1041,19 +1041,21 @@ safe_converters.BufferSource = (
   opts = ObjectCreate(null),
 ) => {
   if (ArrayBufferIsView(V)) {
-    let buffer: ArrayBuffer | SharedArrayBuffer;
-    if (isTypedArray(V)) {
-      buffer = TypedArrayPrototypeGetBuffer(V);
-    } else {
-      buffer = DataViewPrototypeGetBuffer(V);
-    }
-    if (!opts.allowShared && isSharedArrayBuffer(buffer)) {
-      throw makeException(
-        TypeError,
-        "is a view on a SharedArrayBuffer, which is not allowed",
-        prefix,
-        context,
-      );
+    if (!opts.allowShared) {
+      let buffer: ArrayBuffer | SharedArrayBuffer;
+      if (isTypedArray(V)) {
+        buffer = TypedArrayPrototypeGetBuffer(V);
+      } else {
+        buffer = DataViewPrototypeGetBuffer(V);
+      }
+      if (isSharedArrayBuffer(buffer)) {
+        throw makeException(
+          TypeError,
+          "is a view on a SharedArrayBuffer, which is not allowed",
+          prefix,
+          context,
+        );
+      }
     }
 
     return V;

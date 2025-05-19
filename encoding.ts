@@ -6,7 +6,6 @@ import {
   DataViewPrototypeGetByteLength,
   DataViewPrototypeGetByteOffset,
   RangeError,
-  ReflectApply,
   SharedArrayBufferPrototypeGetByteLength,
   StringFromCharCode,
   StringPrototypeCharCodeAt,
@@ -39,6 +38,7 @@ import {
   HEAPU8,
 } from "./_internal/encoding_rs.js";
 import { uncurryThis } from "./_internal/primordials.js";
+import { StringFromCharCodes } from "./_internal/from-char-codes.ts";
 
 function op_encoding_normalize_label(label: string) {
   const ptrSize = label.length < ENCODING_NAME_MAX_LENGTH
@@ -67,6 +67,7 @@ function op_encoding_normalize_label(label: string) {
 }
 
 let isTextDecoder: (v: object) => v is TextDecoder;
+const EMPTY = new Uint8Array();
 class TextDecoder {
   static {
     // deno-lint-ignore prefer-primordials
@@ -78,6 +79,8 @@ class TextDecoder {
   #fatal: boolean;
   #ignoreBOM: boolean;
   #handle: number | null = null;
+  #utf8: boolean;
+  #fast: boolean;
 
   /**
    * @param {string} label
@@ -104,6 +107,7 @@ class TextDecoder {
     this.#encodingLabel = encoding.label;
     this.#fatal = options.fatal!;
     this.#ignoreBOM = options.ignoreBOM!;
+    this.#fast = this.#utf8 = encoding.label === "utf-8";
   }
 
   /** @returns {string} */
@@ -129,16 +133,14 @@ class TextDecoder {
    * @param {TextDecodeOptions} options
    */
   decode(
-    input: BufferSource = new Uint8Array(),
+    input: BufferSource = EMPTY,
     options: TextDecodeOptions | undefined = undefined,
   ): string {
     webidl.assertBranded(this, isTextDecoder);
     const prefix = "Failed to execute 'decode' on 'TextDecoder'";
-    if (input !== undefined) {
-      input = webidl.converters.BufferSource(input, prefix, "Argument 1", {
-        allowShared: true,
-      });
-    }
+    input = webidl.converters.BufferSource(input, prefix, "Argument 1", {
+      allowShared: true,
+    });
     let stream = false;
     if (options !== undefined) {
       options = webidl.converters.TextDecodeOptions(
@@ -178,7 +180,6 @@ class TextDecoder {
           // not a dataview
         }
       }
-
       if (!buffer) {
         buffer = input as Exclude<typeof input, DataView | ArrayBufferView>;
         byteOffset = 0;
@@ -187,6 +188,23 @@ class TextDecoder {
         } catch {
           byteLength = SharedArrayBufferPrototypeGetByteLength(buffer);
         }
+      }
+
+      let prefix = "";
+
+      if (this.#fast) {
+        const u8 = new Uint8Array(buffer, byteOffset, byteLength);
+        let asciiPrefix = 0;
+        while (asciiPrefix < u8.length && !(u8[asciiPrefix] & 0x80)) {
+          asciiPrefix++;
+        }
+        prefix = StringFromCharCodes(
+          new Uint8Array(buffer, byteOffset, asciiPrefix),
+        );
+        byteLength = byteLength - asciiPrefix;
+        byteOffset = byteOffset + asciiPrefix;
+        if (!byteLength) return prefix;
+        if (stream) this.#fast = false;
       }
 
       if (this.#handle === null) {
@@ -229,8 +247,8 @@ class TextDecoder {
 
       const buf = __rust_alloc(size, 4);
       try {
-        HEAPU32[(buf + o_src_len) / 4] = byteLength;
-        HEAPU32[(buf + o_dst_len) / 4] = max_buffer_length;
+        HEAPU32[(buf + o_src_len) >> 2] = byteLength;
+        HEAPU32[(buf + o_dst_len) >> 2] = max_buffer_length;
         TypedArrayPrototypeSet(
           HEAPU8,
           new Uint8Array(buffer, byteOffset, byteLength),
@@ -249,10 +267,8 @@ class TextDecoder {
         if (had_replacements && this.#fatal) {
           throw new TypeError("The encoded data is not valid");
         }
-        const written = HEAPU32[(buf + o_dst_len) / 4];
-        return ReflectApply(
-          StringFromCharCode,
-          null,
+        const written = HEAPU32[(buf + o_dst_len) >> 2];
+        return prefix + StringFromCharCodes(
           new Uint16Array(encodingBuffer, buf + o_dst, written),
         );
       } finally {
@@ -262,6 +278,7 @@ class TextDecoder {
       if (!stream && this.#handle !== null) {
         decoder_free(this.#handle);
         this.#handle = null;
+        this.#fast = this.#utf8;
       }
     }
   }
