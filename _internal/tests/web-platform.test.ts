@@ -7,6 +7,7 @@ import assert from "node:assert";
 import { directlyRunnableTests, resourceDependentTests } from "./get_wpt.ts";
 import { URL, URLSearchParams } from "../../url.ts";
 import { TextDecoder, TextEncoder } from "../../encoding.ts";
+import { DOMException } from "../../domexception.ts";
 import encodings_table from "https://encoding.spec.whatwg.org/encodings.json" with {
   type: "json",
 };
@@ -38,6 +39,7 @@ import toASCIIData from "./web-platform-tests/url/resources/toascii.json" with {
   type: "json",
 };
 import { makeSafe } from "../primordial-utils.ts";
+import { ObjectHasOwn } from "../primordials.js";
 
 const str = (s: string) =>
   `'${
@@ -206,7 +208,7 @@ function runWPT(
 
     let chain = Promise.resolve(true);
 
-    const sandbox = vm.createContext({
+    const sandbox = vm.createContext(Object.defineProperties({
       get self() {
         return this;
       },
@@ -249,7 +251,6 @@ function runWPT(
       TextDecoder,
       URL,
       URLSearchParams,
-      DOMException,
       fetch: fakeFetch.bind(dirname(filePath)),
       format_value: Deno.inspect,
 
@@ -294,6 +295,18 @@ function runWPT(
       assert_unreached() {
         assert(false);
       },
+      assert_own_property(
+        object: object,
+        property_name: string | symbol,
+        description?: string,
+      ) {
+        assert(
+          ObjectHasOwn(object, property_name),
+          `assert_own_property: expected property ${property_name.toString()} missing${
+            description ? ": " + description : ""
+          }`,
+        );
+      },
 
       subsetTestByKey(
         _key: string,
@@ -314,7 +327,15 @@ function runWPT(
       ) {
         return testFunc(...args);
       },
-    });
+      Function,
+      Error,
+    }, {
+      DOMException: {
+        value: DOMException,
+        configurable: true,
+        writable: true,
+      },
+    }));
 
     try {
       vm.runInContext(code, sandbox, {

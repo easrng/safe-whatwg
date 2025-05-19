@@ -1,9 +1,10 @@
 {
   "name": "@easrng/safe-whatwg",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "exports": {
     "./url": "./url.ts",
-    "./encoding": "./encoding.ts"
+    "./encoding": "./encoding.ts",
+    "./domexception": "./domexception.ts"
   },
   "lint": {
     "rules": {

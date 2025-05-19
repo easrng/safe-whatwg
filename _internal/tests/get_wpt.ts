@@ -63,6 +63,10 @@ export const directlyRunnableTests = [
   "encoding/textdecoder-utf16-surrogates.any.js",
   "encoding/textencoder-constructor-non-utf.any.js",
   "encoding/textencoder-utf16-surrogates.any.js",
+  "webidl/ecmascript-binding/es-exceptions/DOMException-constructor-and-prototype.any.js",
+  "webidl/ecmascript-binding/es-exceptions/DOMException-constructor-behavior.any.js",
+  "webidl/ecmascript-binding/es-exceptions/DOMException-custom-bindings.any.js",
+  "webidl/ecmascript-binding/es-exceptions/DOMException-is-error.any.js",
 ];
 
 // These tests need some special handling in /test/web-platform.js, since they need to be hooked up to their resource

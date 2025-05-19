@@ -35,6 +35,19 @@ with algorithms from [encoding_rs](https://github.com/hsivonen/encoding_rs). It
 complies with the Encoding spec up to commit
 [2f2e812](https://github.com/whatwg/encoding/commit/2f2e8121c67b1f050e5262800e62de27e96854bc).
 
+### ✅ DOMException
+
+```ts
+import { DOMException } from "jsr:@easrng/safe-whatwg/domexception";
+```
+
+The implementation structure is based on Deno's
+[00_webidl.js](https://github.com/denoland/deno/blob/main/ext/webidl/00_webidl.js)
+and
+[01_dom_exception.js](https://github.com/denoland/deno/blob/main/ext/web/01_dom_exception.js).
+It complies with the WebIDL spec up to commit
+[122e9da](https://github.com/whatwg/webidl/commit/122e9da1770e520c5b59eb03dbeafbfa555f02e1).
+
 ## Robustness
 
 This library should be robust against any environment modifications that occur
