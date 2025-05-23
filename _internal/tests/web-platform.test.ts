@@ -1,6 +1,5 @@
 // deno-lint-ignore-file prefer-primordials
-"use strict";
-import path, { dirname } from "node:path";
+import path from "node:path";
 import fs from "node:fs";
 import vm from "node:vm";
 import assert from "node:assert";
@@ -40,6 +39,8 @@ import toASCIIData from "./web-platform-tests/url/resources/toascii.json" with {
 };
 import { makeSafe } from "../primordial-utils.ts";
 import { ObjectHasOwn } from "../primordials.js";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { createConsole } from "../../console/unstable-create.ts";
 
 const str = (s: string) =>
   `'${
@@ -190,6 +191,57 @@ Deno.test("makeSafe", () => {
   assert.strictEqual(u.toString(), "https://example.com/");
 });
 
+const deps = await Promise.all(
+  [
+    "./web-platform-tests/resources/webidl2/lib/webidl2.js",
+    "./web-platform-tests/resources/idlharness.js",
+    "./setup.js",
+  ].map((name) => import.meta.resolve(name)).map(async (
+    url,
+  ) => [fileURLToPath(url), await (await fetch(url)).text()]),
+);
+
+function _assert_inherits(name: string) {
+  return function (
+    object: object,
+    property_name: PropertyKey,
+    description: string,
+  ) {
+    assert(
+      (typeof object === "object" && object !== null) ||
+        typeof object === "function" ||
+        // Or has [[IsHTMLDDA]] slot
+        String(object) === "[object HTMLAllCollection]",
+      name + ": " + (description ? description + ": " : "") +
+        "provided value is not an object",
+    );
+
+    assert(
+      "hasOwnProperty" in object,
+      name + ": " +
+        (description ? description + ": " : "") +
+        "provided value is an object but has no hasOwnProperty method",
+    );
+
+    assert(
+      // deno-lint-ignore no-prototype-builtins
+      !object.hasOwnProperty(property_name),
+      name + ": " +
+        (description ? description + ": " : "") +
+        `property '${
+          String(property_name)
+        }' found on object expected in prototype chain`,
+    );
+
+    assert(
+      property_name in object,
+      name + ": " +
+        (description ? description + ": " : "") +
+        `property '${String(property_name)}' not found in prototype chain`,
+    );
+  };
+}
+
 function runWPT(
   testFile: string,
   test: (
@@ -247,21 +299,47 @@ function runWPT(
           },
         };
       },
-      TextEncoder,
-      TextDecoder,
-      URL,
-      URLSearchParams,
-      fetch: fakeFetch.bind(dirname(filePath)),
+      fetch: fakeFetch.bind(filePath),
       format_value: Deno.inspect,
 
       test(func: () => void, name?: string) {
         if (name?.includes("FormData")) return;
-        chain = chain.then(() => t.step(name || "[single-file test]", func));
+
+        let err = undefined;
+        try {
+          func();
+        } catch (e) {
+          err = e;
+        }
+        chain = chain.then(() =>
+          t.step(name || "[single-file test]", () => {
+            if (err) throw err;
+          })
+        );
       },
 
       promise_test(func: () => Promise<void>, name?: string) {
         if (name?.includes(".formData()")) return;
         chain = chain.then(() => t.step(name || "[single-file test]", func));
+      },
+
+      async_test(name?: string) {
+        return {
+          step(func: () => Promise<void>) {
+            let err = undefined;
+            try {
+              func();
+            } catch (e) {
+              err = e;
+            }
+            chain = chain.then(() =>
+              t.step(name || "[single-file test]", () => {
+                if (err) throw err;
+              })
+            );
+          },
+          done() {},
+        };
       },
 
       assert_true(actual: unknown) {
@@ -273,7 +351,23 @@ function runWPT(
       },
 
       assert_equals(actual: unknown, expected: unknown) {
+        if (
+          actual === Object.prototype &&
+          Object.getPrototypeOf(expected) === null
+        ) return;
         assert.strictEqual(actual, expected);
+      },
+      assert_in_array(
+        actual: unknown,
+        expected: unknown[],
+        description: string,
+      ) {
+        assert(
+          expected.indexOf(actual) != -1,
+          "assert_in_array: " +
+            (description ? description + ": " : "") +
+            `value ${actual} not in array ${expected}`,
+        );
       },
 
       assert_not_equals(actual: unknown, expected: unknown) {
@@ -308,15 +402,56 @@ function runWPT(
         );
       },
 
+      assert_inherits(
+        object: object,
+        property_name: PropertyKey,
+        description: string,
+      ) {
+        return _assert_inherits("assert_inherits")(
+          object,
+          property_name,
+          description,
+        );
+      },
+      assert_regexp_match(
+        actual: string,
+        expected: RegExp,
+        description: string,
+      ) {
+        /*
+         * Test if a string (actual) matches a regexp (expected)
+         */
+        assert(
+          expected.test(actual),
+          "assert_regexp_match" + ": " +
+            (description ? description + ": " : "") +
+            `expected ${expected} but got ${actual}`,
+        );
+      },
+      assert_class_string(
+        object: object,
+        class_string: string,
+        description: string,
+      ) {
+        const actual = {}.toString.call(object);
+        const expected = "[object " + class_string + "]";
+        assert.strictEqual(
+          actual,
+          expected,
+          "assert_class_string" +
+            (description ? ": " + description : ""),
+        );
+      },
+
       subsetTestByKey(
         _key: string,
-        testRunnerFunc: (func: () => void, name: string) => void,
-        func: () => void,
-        name: string,
+        testRunnerFunc: (...args: unknown[]) => void,
+        ...args: unknown[]
       ) {
         // Don't do any keying stuff.
-        testRunnerFunc(func, name);
+        return testRunnerFunc(...args);
       },
+      shouldRunSubTest: () => true,
 
       setup(fn: () => void) {
         fn();
@@ -329,15 +464,51 @@ function runWPT(
       },
       Function,
       Error,
+      HostObject: Object,
     }, {
       DOMException: {
         value: DOMException,
         configurable: true,
         writable: true,
       },
+      TextEncoder: {
+        value: TextEncoder,
+        configurable: true,
+        writable: true,
+      },
+      TextDecoder: {
+        value: TextDecoder,
+        configurable: true,
+        writable: true,
+      },
+      URL: {
+        value: URL,
+        configurable: true,
+        writable: true,
+      },
+      URLSearchParams: {
+        value: URLSearchParams,
+        configurable: true,
+        writable: true,
+      },
+      console: {
+        value: createConsole(console.log),
+        configurable: true,
+        writable: true,
+      },
     }));
 
     try {
+      for (const [path, content] of deps) {
+        vm.runInContext(
+          content,
+          sandbox,
+          {
+            filename: path,
+            displayErrors: true,
+          },
+        );
+      }
       vm.runInContext(code, sandbox, {
         filename: testFile,
         displayErrors: true,
@@ -356,15 +527,15 @@ function runWPT(
 }
 
 function fakeFetch(this: string, url: string) {
-  const filePath = path.resolve(
-    this,
+  const base = import.meta.resolve("./web-platform-tests/");
+  url = new URL(
     url,
+    "https://localhost/" + pathToFileURL(this).href.slice(
+      base.length,
+    ),
+  ).href.replace(
+    /^https:\/\/localhost\//,
+    base,
   );
-  return Promise.resolve({
-    json() {
-      return fs.promises.readFile(filePath, { encoding: "utf-8" }).then(
-        JSON.parse,
-      );
-    },
-  });
+  return fetch(url);
 }

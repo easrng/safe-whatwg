@@ -22,6 +22,10 @@ const resources = [
   "url/resources/urltestdata-javascript-only.json",
   "url/resources/IdnaTestV2.json",
   "url/resources/IdnaTestV2-removed.json",
+  "resources/idlharness.js",
+  "interfaces/console.idl",
+  "interfaces/url.idl",
+  "resources/webidl2/lib/webidl2.js",
 ];
 
 // These tests we can download and run directly in /test/web-platform.js.
@@ -67,6 +71,8 @@ export const directlyRunnableTests = [
   "webidl/ecmascript-binding/es-exceptions/DOMException-constructor-behavior.any.js",
   "webidl/ecmascript-binding/es-exceptions/DOMException-custom-bindings.any.js",
   "webidl/ecmascript-binding/es-exceptions/DOMException-is-error.any.js",
+  "console/idlharness.any.js",
+  "url/idlharness.any.js",
 ];
 
 // These tests need some special handling in /test/web-platform.js, since they need to be hooked up to their resource

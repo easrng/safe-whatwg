@@ -10,6 +10,7 @@ import {
   FunctionPrototypeCall,
   type Iterator,
   Map,
+  MapPrototypeHas,
   MapPrototypeSymbolIterator,
   ObjectFreeze,
   ObjectPrototypeIsPrototypeOf,
@@ -23,6 +24,7 @@ import {
   ReflectOwnKeys,
   RegExp,
   Set,
+  SetPrototypeHas,
   SetPrototypeSymbolIterator,
   SharedArrayBufferPrototypeGetByteLength,
   StringPrototypeSymbolIterator,
@@ -472,6 +474,22 @@ export function isArrayBufferDetached(value: unknown) {
 export function isDataView(value: unknown) {
   try {
     DataViewPrototypeGetByteLength(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+export function isSet(value: unknown) {
+  try {
+    SetPrototypeHas(value, null);
+    return true;
+  } catch {
+    return false;
+  }
+}
+export function isMap(value: unknown) {
+  try {
+    MapPrototypeHas(value, null);
     return true;
   } catch {
     return false;
