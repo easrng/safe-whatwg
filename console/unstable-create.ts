@@ -612,7 +612,8 @@ export function createConsole(printer: Printer): Console {
         logger("groupCollapsed", data);
       },
       groupEnd() {
-        logger("groupEnd", ArrayPrototypePop(groupStack));
+        const group = ArrayPrototypePop(groupStack);
+        if (group) logger("groupEnd", group);
       },
       time(label: string | undefined = undefined) {
         if (label === undefined) label = "default";
