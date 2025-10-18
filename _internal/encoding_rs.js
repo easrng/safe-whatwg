@@ -20,9 +20,9 @@ var base64ReverseLookup = new Uint8Array(
   /*'z'+1*/
 );
 for (let i = 25; i >= 0; --i) {
-  base64ReverseLookup[48 + i] = 52 + i;
-  base64ReverseLookup[65 + i] = i;
-  base64ReverseLookup[97 + i] = 26 + i;
+  base64ReverseLookup[(48 + i) | 0] = 52 + i;
+  base64ReverseLookup[(65 + i) | 0] = i;
+  base64ReverseLookup[(97 + i) | 0] = 26 + i;
 }
 base64ReverseLookup[43] = 62;
 base64ReverseLookup[47] = 63;
@@ -31,20 +31,22 @@ function base64DecodeToExistingUint8Array(uint8Array, offset, b64) {
     b2,
     i = 0,
     j = offset,
+    // deno-lint-ignore no-property-access/no-property-access
     bLength = b64.length,
     end = offset +
       ((bLength * 3) >> 2) -
       (b64[bLength - 2] == "=") -
       (b64[bLength - 1] == "=");
   for (; i < bLength; i += 4) {
-    b1 = base64ReverseLookup[StringPrototypeCharCodeAt(b64, i + 1)];
-    b2 = base64ReverseLookup[StringPrototypeCharCodeAt(b64, i + 2)];
-    uint8Array[j++] =
-      (base64ReverseLookup[StringPrototypeCharCodeAt(b64, i)] << 2) | (b1 >> 4);
-    if (j < end) uint8Array[j++] = (b1 << 4) | (b2 >> 2);
+    b1 = base64ReverseLookup[StringPrototypeCharCodeAt(b64, i + 1) | 0];
+    b2 = base64ReverseLookup[StringPrototypeCharCodeAt(b64, i + 2) | 0];
+    uint8Array[j++ | 0] =
+      (base64ReverseLookup[StringPrototypeCharCodeAt(b64, i) | 0] << 2) |
+      (b1 >> 4);
+    if (j < end) uint8Array[j++ | 0] = (b1 << 4) | (b2 >> 2);
     if (j < end) {
-      uint8Array[j++] = (b2 << 6) |
-        base64ReverseLookup[StringPrototypeCharCodeAt(b64, i + 3)];
+      uint8Array[j++ | 0] = (b2 << 6) |
+        base64ReverseLookup[StringPrototypeCharCodeAt(b64, i + 3) | 0];
     }
   }
 }

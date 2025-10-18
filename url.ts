@@ -25,7 +25,11 @@ import {
   setTheUsername,
   type URLRecord,
 } from "./_internal/url/state-machine.ts";
-import { ArrayPrototypeMap, SafeRegExp } from "./_internal/primordial-utils.ts";
+import {
+  ArrayPrototypeMap,
+  type Safe,
+  SafeRegExp,
+} from "./_internal/primordial-utils.ts";
 import {
   Array,
   ArrayIsArray,
@@ -46,6 +50,7 @@ import {
   Symbol,
   SymbolIterator,
   TypeError,
+  undefined,
   URIError,
 } from "./_internal/primordials.js";
 import { percentDecodeString } from "./_internal/url/percent-encoding.ts";
@@ -323,7 +328,7 @@ function encodeStr(
   let i = 0;
 
   outer: for (; i < len; i++) {
-    let c = StringPrototypeCharCodeAt(str, i);
+    let c: number = StringPrototypeCharCodeAt(str, i);
 
     // ASCII
     while (c < 0x80) {
@@ -557,7 +562,7 @@ function parseParams(
   let pairStart = i;
   let lastPos = i;
   for (; i < qs.length; ++i) {
-    const code = StringPrototypeCharCodeAt(qs, i);
+    const code: number = StringPrototypeCharCodeAt(qs, i);
 
     // Try matching key/value pair separator
     if (code === CHAR_AMPERSAND) {
@@ -644,6 +649,8 @@ interface URLSearchParamsIterator<T>
   [SymbolIterator](): URLSearchParamsIterator<T>;
 }
 
+const converters: Safe<typeof webidl.converters> = webidl.converters;
+
 class URLSearchParams {
   static {
     // deno-lint-ignore prefer-primordials
@@ -662,7 +669,7 @@ class URLSearchParams {
       this.#listMap = [];
       return;
     }
-    let init = webidl.converters[
+    let init = converters[
       "sequence<sequence<USVString>> or record<USVString, USVString> or USVString"
     ](rawInit, prefix, "Argument 1");
 
@@ -676,7 +683,7 @@ class URLSearchParams {
       this.#listMap = parseParams(init);
     } else if (ArrayIsArray(init)) {
       // Overload: sequence<sequence<USVString>>
-      this.#listMap = ArrayPrototypeMap(init, (pair, i) => {
+      this.#listMap = ArrayPrototypeMap(init, (pair: string[], i) => {
         if (pair.length !== 2) {
           throw new TypeError(
             `${prefix}: Item ${
@@ -687,10 +694,14 @@ class URLSearchParams {
         return [pair[0]!, pair[1]!];
       });
     } else {
+      const init_: Safe<Record<string, string>> = init as Record<
+        string,
+        string
+      >;
       // Overload: record<USVString, USVString>
       this.#listMap = ArrayPrototypeMap(ObjectKeys(init), (key) => [
         key,
-        (init as Record<string, string>)[key]!,
+        init_[key]!,
       ]);
     }
   }
@@ -710,8 +721,8 @@ class URLSearchParams {
     webidl.assertBranded(this, isURLSearchParams);
     const prefix = "Failed to execute 'append' on 'URLSearchParams'";
     webidl.requiredArguments(arguments.length, 2, prefix);
-    name = webidl.converters.USVString(name, prefix, "Argument 1");
-    value = webidl.converters.USVString(value, prefix, "Argument 2");
+    name = converters.USVString(name, prefix, "Argument 1");
+    value = converters.USVString(value, prefix, "Argument 2");
     ArrayPrototypePush(this.#listMap, [name, value]);
     this.#updateUrlSearch();
   }
@@ -720,8 +731,8 @@ class URLSearchParams {
     webidl.assertBranded(this, isURLSearchParams);
     const prefix = "Failed to execute 'append' on 'URLSearchParams'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    name = webidl.converters.USVString(name, prefix, "Argument 1");
-    const list = this.#listMap;
+    name = converters.USVString(name, prefix, "Argument 1");
+    const list: [string, string][] = this.#listMap;
     let i = 0;
     if (value === undefined) {
       while (i < list.length) {
@@ -732,7 +743,7 @@ class URLSearchParams {
         }
       }
     } else {
-      value = webidl.converters.USVString(value, prefix, "Argument 2");
+      value = converters.USVString(value, prefix, "Argument 2");
       while (i < list.length) {
         if (list[i]![0] === name && list[i]![1] === value) {
           ArrayPrototypeSplice(list, i, 1);
@@ -748,9 +759,9 @@ class URLSearchParams {
     webidl.assertBranded(this, isURLSearchParams);
     const prefix = "Failed to execute 'getAll' on 'URLSearchParams'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    name = webidl.converters.USVString(name, prefix, "Argument 1");
+    name = converters.USVString(name, prefix, "Argument 1");
     const values: string[] = [];
-    const entries = this.#listMap;
+    const entries: [string, string][] = this.#listMap;
     for (let i = 0; i < entries.length; ++i) {
       const entry = entries[i]!;
       if (entry[0] === name) {
@@ -764,8 +775,8 @@ class URLSearchParams {
     webidl.assertBranded(this, isURLSearchParams);
     const prefix = "Failed to execute 'get' on 'URLSearchParams'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    name = webidl.converters.USVString(name, prefix, "Argument 1");
-    const entries = this.#listMap;
+    name = converters.USVString(name, prefix, "Argument 1");
+    const entries: [string, string][] = this.#listMap;
     for (let i = 0; i < entries.length; ++i) {
       const entry = entries[i]!;
       if (entry[0] === name) {
@@ -779,9 +790,9 @@ class URLSearchParams {
     webidl.assertBranded(this, isURLSearchParams);
     const prefix = "Failed to execute 'has' on 'URLSearchParams'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    name = webidl.converters.USVString(name, prefix, "Argument 1");
+    name = converters.USVString(name, prefix, "Argument 1");
     if (value !== undefined) {
-      value = webidl.converters.USVString(value, prefix, "Argument 2");
+      value = converters.USVString(value, prefix, "Argument 2");
       return ArrayPrototypeSome(
         this.#listMap,
         (entry) => entry[0] === name && entry[1] === value,
@@ -797,10 +808,10 @@ class URLSearchParams {
     webidl.assertBranded(this, isURLSearchParams);
     const prefix = "Failed to execute 'set' on 'URLSearchParams'";
     webidl.requiredArguments(arguments.length, 2, prefix);
-    name = webidl.converters.USVString(name, prefix, "Argument 1");
-    value = webidl.converters.USVString(value, prefix, "Argument 2");
+    name = converters.USVString(name, prefix, "Argument 1");
+    value = converters.USVString(value, prefix, "Argument 2");
 
-    const list = this.#listMap;
+    const list: [string, string][] = this.#listMap;
 
     // If there are any name-value pairs whose name is name, in list,
     // set the value of the first such name-value pair to value
@@ -850,7 +861,8 @@ class URLSearchParams {
 
   get size(): number {
     webidl.assertBranded(this, isURLSearchParams);
-    return this.#listMap.length;
+    const map: [string, string][] = this.#listMap;
+    return map.length;
   }
 
   forEach(
@@ -888,14 +900,14 @@ webidl.mixinPairIterable(
 
 webidl.configureInterface(URLSearchParams, "URLSearchParams");
 
-webidl.converters["URLSearchParams"] = webidl.createInterfaceConverter(
+converters["URLSearchParams"] = webidl.createInterfaceConverter(
   "URLSearchParams",
   isURLSearchParams,
 );
 
 const skipInit: unique symbol = Symbol("skipInit") as never;
 
-function potentiallyStripTrailingSpacesFromAnOpaquePath(url: URLRecord) {
+function potentiallyStripTrailingSpacesFromAnOpaquePath(url: Safe<URLRecord>) {
   if (!hasAnOpaquePath(url)) {
     return;
   }
@@ -943,9 +955,9 @@ class URL {
     }
     const prefix = "Failed to construct 'URL'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    url = webidl.converters.DOMString(url, prefix, "Argument 1");
+    url = converters.DOMString(url, prefix, "Argument 1");
     if (base !== undefined) {
-      base = webidl.converters.DOMString(base, prefix, "Argument 2");
+      base = converters.DOMString(base, prefix, "Argument 2");
     }
 
     let parsedBase = null;
@@ -965,15 +977,16 @@ class URL {
 
   static {
     updateUrlSearch = (instance, value) => {
+      const urlRecord: Safe<URLRecord> = instance.#urlRecord;
       if (value === "") {
-        instance.#urlRecord.query = null;
-        potentiallyStripTrailingSpacesFromAnOpaquePath(instance.#urlRecord);
+        urlRecord.query = null;
+        potentiallyStripTrailingSpacesFromAnOpaquePath(urlRecord);
         return;
       }
 
-      instance!.#urlRecord.query = "";
+      urlRecord.query = "";
       basicURLParse(value!, {
-        url: instance!.#urlRecord,
+        url: urlRecord,
         stateOverride: parseQuery,
       });
     };
@@ -985,9 +998,9 @@ class URL {
   ): URL | null {
     const prefix = "Failed to execute 'URL.parse'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    url = webidl.converters.DOMString(url, prefix, "Argument 1");
+    url = converters.DOMString(url, prefix, "Argument 1");
     if (base !== undefined) {
-      base = webidl.converters.DOMString(base, prefix, "Argument 2");
+      base = converters.DOMString(base, prefix, "Argument 2");
     }
 
     let parsedBase = null;
@@ -1013,9 +1026,9 @@ class URL {
   static canParse(url: string, base: string | undefined = undefined): boolean {
     const prefix = "Failed to execute 'URL.canParse'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    url = webidl.converters.DOMString(url, prefix, "Argument 1");
+    url = converters.DOMString(url, prefix, "Argument 1");
     if (base !== undefined) {
-      base = webidl.converters.DOMString(base, prefix, "Argument 2");
+      base = converters.DOMString(base, prefix, "Argument 2");
     }
     let parsedBase = null;
     if (base !== undefined) {
@@ -1033,28 +1046,31 @@ class URL {
 
   get hash(): string {
     webidl.assertBranded(this, isURL);
-    if (this.#urlRecord.fragment === null || this.#urlRecord.fragment === "") {
+    const urlRecord: Safe<URLRecord> = this.#urlRecord;
+    if (urlRecord.fragment === null || urlRecord.fragment === "") {
       return "";
     }
 
-    return `#${this.#urlRecord.fragment}`;
+    return `#${urlRecord.fragment}`;
   }
 
   set hash(value: string) {
     webidl.assertBranded(this, isURL);
     const prefix = "Failed to set 'hash' on 'URL'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    value = webidl.converters.DOMString(value, prefix, "Argument 1");
+    value = converters.DOMString(value, prefix, "Argument 1");
+    const urlRecord: Safe<URLRecord> = this.#urlRecord;
+
     if (value === "") {
-      this.#urlRecord.fragment = null;
-      potentiallyStripTrailingSpacesFromAnOpaquePath(this.#urlRecord);
+      urlRecord.fragment = null;
+      potentiallyStripTrailingSpacesFromAnOpaquePath(urlRecord);
       return;
     }
 
     const input = value[0] === "#" ? StringPrototypeSlice(value, 1) : value;
-    this.#urlRecord.fragment = "";
+    urlRecord.fragment = "";
     basicURLParse(input, {
-      url: this.#urlRecord,
+      url: urlRecord,
       stateOverride: parseFragment,
     });
   }
@@ -1062,7 +1078,7 @@ class URL {
   /** @return {string} */
   get host(): string {
     webidl.assertBranded(this, isURL);
-    const url = this.#urlRecord;
+    const url: Safe<URLRecord> = this.#urlRecord;
 
     if (url.host === null) {
       return "";
@@ -1080,7 +1096,7 @@ class URL {
     webidl.assertBranded(this, isURL);
     const prefix = "Failed to set 'host' on 'URL'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    value = webidl.converters.DOMString(value, prefix, "Argument 1");
+    value = converters.DOMString(value, prefix, "Argument 1");
     if (hasAnOpaquePath(this.#urlRecord)) {
       return;
     }
@@ -1091,11 +1107,13 @@ class URL {
   /** @return {string} */
   get hostname(): string {
     webidl.assertBranded(this, isURL);
-    if (this.#urlRecord.host === null) {
+    const urlRecord: Safe<URLRecord> = this.#urlRecord;
+
+    if (urlRecord.host === null) {
       return "";
     }
 
-    return serializeHost(this.#urlRecord.host)!;
+    return serializeHost(urlRecord.host)!;
   }
 
   /** @param {string} value */
@@ -1103,7 +1121,7 @@ class URL {
     webidl.assertBranded(this, isURL);
     const prefix = "Failed to set 'hostname' on 'URL'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    value = webidl.converters.DOMString(value, prefix, "Argument 1");
+    value = converters.DOMString(value, prefix, "Argument 1");
     if (hasAnOpaquePath(this.#urlRecord)) {
       return;
     }
@@ -1127,7 +1145,7 @@ class URL {
     webidl.assertBranded(this, isURL);
     const prefix = "Failed to set 'href' on 'URL'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    value = webidl.converters.DOMString(value, prefix, "Argument 1");
+    value = converters.DOMString(value, prefix, "Argument 1");
     const parsedURL = basicURLParse(value);
     if (parsedURL === null) {
       throw new TypeError(`Invalid URL: ${value}`);
@@ -1144,14 +1162,15 @@ class URL {
 
   get password(): string {
     webidl.assertBranded(this, isURL);
-    return this.#urlRecord.password;
+    const urlRecord: Safe<URLRecord> = this.#urlRecord;
+    return urlRecord.password;
   }
 
   set password(value: string) {
     webidl.assertBranded(this, isURL);
     const prefix = "Failed to set 'password' on 'URL'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    value = webidl.converters.DOMString(value, prefix, "Argument 1");
+    value = converters.DOMString(value, prefix, "Argument 1");
     try {
       if (cannotHaveAUsernamePasswordPort(this.#urlRecord)) {
         return;
@@ -1172,15 +1191,17 @@ class URL {
     webidl.assertBranded(this, isURL);
     const prefix = "Failed to set 'pathname' on 'URL'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    value = webidl.converters.DOMString(value, prefix, "Argument 1");
+    value = converters.DOMString(value, prefix, "Argument 1");
+    const urlRecord: Safe<URLRecord> = this.#urlRecord;
+
     try {
-      if (hasAnOpaquePath(this.#urlRecord)) {
+      if (hasAnOpaquePath(urlRecord)) {
         return;
       }
 
-      this.#urlRecord.path = [];
+      urlRecord.path = [];
       basicURLParse(value, {
-        url: this.#urlRecord,
+        url: urlRecord,
         stateOverride: parsePathStart,
       });
     } catch {
@@ -1190,38 +1211,41 @@ class URL {
 
   get port(): string {
     webidl.assertBranded(this, isURL);
-    if (this.#urlRecord.port === null) {
+    const urlRecord: Safe<URLRecord> = this.#urlRecord;
+    if (urlRecord.port === null) {
       return "";
     }
-    return String(this.#urlRecord.port);
+    return String(urlRecord.port);
   }
 
   set port(value: string) {
     webidl.assertBranded(this, isURL);
     const prefix = "Failed to set 'port' on 'URL'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    value = webidl.converters.DOMString(value, prefix, "Argument 1");
-    if (cannotHaveAUsernamePasswordPort(this.#urlRecord)) {
+    value = converters.DOMString(value, prefix, "Argument 1");
+    const urlRecord: Safe<URLRecord> = this.#urlRecord;
+    if (cannotHaveAUsernamePasswordPort(urlRecord)) {
       return;
     }
 
     if (value === "") {
-      this.#urlRecord.port = null;
+      urlRecord.port = null;
     } else {
-      basicURLParse(value, { url: this.#urlRecord, stateOverride: parsePort });
+      basicURLParse(value, { url: urlRecord, stateOverride: parsePort });
     }
   }
 
   get protocol(): string {
     webidl.assertBranded(this, isURL);
-    return `${this.#urlRecord.scheme}:`;
+    const urlRecord: Safe<URLRecord> = this.#urlRecord;
+    return `${urlRecord.scheme}:`;
   }
 
   set protocol(value: string) {
     webidl.assertBranded(this, isURL);
     const prefix = "Failed to set 'protocol' on 'URL'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    value = webidl.converters.DOMString(value, prefix, "Argument 1");
+    value = converters.DOMString(value, prefix, "Argument 1");
     try {
       basicURLParse(`${value}:`, {
         url: this.#urlRecord,
@@ -1233,11 +1257,12 @@ class URL {
   }
 
   get #search(): string {
-    if (this.#urlRecord.query === null || this.#urlRecord.query === "") {
+    const urlRecord: Safe<URLRecord> = this.#urlRecord;
+    if (urlRecord.query === null || urlRecord.query === "") {
       return "";
     }
 
-    return `?${this.#urlRecord.query}`;
+    return `?${urlRecord.query}`;
   }
 
   get search(): string {
@@ -1249,13 +1274,14 @@ class URL {
     webidl.assertBranded(this, isURL);
     const prefix = "Failed to set 'search' on 'URL'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    value = webidl.converters.DOMString(value, prefix, "Argument 1");
+    value = converters.DOMString(value, prefix, "Argument 1");
     try {
-      const url = this.#urlRecord;
+      const url: Safe<URLRecord> = this.#urlRecord;
 
       if (value === "") {
         url.query = null;
-        getListMap(this.#queryObject!)?.splice(0);
+        const listMap: [string, string][] = getListMap(this.#queryObject!);
+        listMap.length = 0;
         potentiallyStripTrailingSpacesFromAnOpaquePath(this.#urlRecord);
         return;
       }
@@ -1272,14 +1298,15 @@ class URL {
   get username(): string {
     webidl.assertBranded(this, isURL);
     // https://github.com/servo/rust-url/blob/1d307ae51a28fecc630ecec03380788bfb03a643/url/src/lib.rs#L881
-    return this.#urlRecord.username;
+    const urlRecord: Safe<URLRecord> = this.#urlRecord;
+    return urlRecord.username;
   }
 
   set username(value: string) {
     webidl.assertBranded(this, isURL);
     const prefix = "Failed to set 'username' on 'URL'";
     webidl.requiredArguments(arguments.length, 1, prefix);
-    value = webidl.converters.DOMString(value, prefix, "Argument 1");
+    value = converters.DOMString(value, prefix, "Argument 1");
     try {
       if (cannotHaveAUsernamePasswordPort(this.#urlRecord)) {
         return;

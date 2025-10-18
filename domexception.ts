@@ -1,5 +1,6 @@
 // Copyright 2018-2025 the Deno authors. MIT license.
 
+import type { Safe } from "./_internal/primordial-utils.ts";
 import {
   Error,
   ErrorPrototype,
@@ -17,9 +18,18 @@ import * as webidl from "./_internal/webidl.ts";
 // https://webidl.spec.whatwg.org/#dfn-error-names-table
 // the prototype should be null, to prevent user code from looking
 // up Object.prototype properties, such as "toString"
-const nameToCodeMapping: Record<string, number> = { __proto__: null as never };
+const nameToCodeMapping: Safe<Record<string, number>> = {
+  __proto__: null as never,
+};
 
-class DOMExceptionSlots extends (function (obj: object) {
+const DOMExceptionSlots: Safe<{
+  new (o: object): object;
+  m(m: DOMException): string;
+  n(m: DOMException): string;
+  c(m: DOMException): number;
+  i(m: DOMException, message: string, name: string, code: number): void;
+  I(v: object): v is DOMException;
+}> = class DOMExceptionSlots extends (function (obj: object) {
   return obj;
 } as unknown as new (o: object) => object) {
   #message!: string;
@@ -44,19 +54,21 @@ class DOMExceptionSlots extends (function (obj: object) {
     // deno-lint-ignore prefer-primordials
     return #message in v;
   }
-}
+};
+
+const converters: Safe<typeof webidl.converters> = webidl.converters;
 
 // Defined in WebIDL 4.3.
 // https://webidl.spec.whatwg.org/#idl-DOMException
 class DOMException {
   // https://webidl.spec.whatwg.org/#dom-domexception-domexception
   constructor(message = "", name = "Error") {
-    message = webidl.converters.DOMString(
+    message = converters.DOMString(
       message,
       "Failed to construct 'DOMException'",
       "Argument 1",
     );
-    name = webidl.converters.DOMString(
+    name = converters.DOMString(
       name,
       "Failed to construct 'DOMException'",
       "Argument 2",
@@ -94,7 +106,7 @@ ObjectSetPrototypeOf(DOMException.prototype, ErrorPrototype);
 
 webidl.configureInterface(DOMException, "DOMException");
 
-const names = [
+const names: string[] = [
   "Index_Size",
   "DOMSTRING_SIZE",
   "Hierarchy_Request",

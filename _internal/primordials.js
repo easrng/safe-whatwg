@@ -1221,6 +1221,8 @@ const PromisePrototypeThen = /* @__PURE__ */ $(() =>
 const PromisePrototypeSymbolToStringTag = /* @__PURE__ */ $(() =>
   PromisePrototype[SymbolToStringTag]
 );
+const undefined = void 0;
+
 export {
   $AggregateError as AggregateError,
   $Array as Array,
@@ -1725,6 +1727,7 @@ export {
   Uint8ClampedArrayPrototype,
   Uint8ClampedArrayPrototypeBYTES_PER_ELEMENT,
   uncurryThis,
+  undefined,
   URIErrorPrototype,
   URIErrorPrototypeMessage,
   URIErrorPrototypeName,

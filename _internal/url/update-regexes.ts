@@ -1,7 +1,7 @@
-// deno-lint-ignore-file prefer-primordials ban-ts-comment no-explicit-any
+// deno-lint-ignore-file prefer-primordials ban-ts-comment no-explicit-any no-property-access/no-property-access
 import fs from "node:fs";
 import regenerate_ from "npm:regenerate@1.4.2";
-const unicodeVersion = "16.0.0";
+const unicodeVersion = "17.0.0";
 const esUnicodeVersion = "15.0.0";
 function dataIsSingleton(data: any) {
   // Check if the set only represents a single code point.

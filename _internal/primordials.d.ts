@@ -1319,6 +1319,7 @@ declare const PromisePrototypeThen: (
   onrejected?: ((reason: any) => unknown) | null | undefined,
 ) => Promise<unknown>;
 declare const PromisePrototypeSymbolToStringTag: string;
+declare const $undefined: undefined;
 export {
   $AggregateError as AggregateError,
   $Array as Array,
@@ -1365,6 +1366,7 @@ export {
   $Uint32Array as Uint32Array,
   $Uint8Array as Uint8Array,
   $Uint8ClampedArray as Uint8ClampedArray,
+  $undefined as undefined,
   $URIError as URIError,
   $WeakMap as WeakMap,
   $WeakSet as WeakSet,

@@ -1,9 +1,9 @@
 import { StringFromCharCode } from "./primordials.js";
 
-export function StringFromCharCodes(codes: ArrayLike<number>) {
+export function StringFromCharCodes(codes: ArrayLike<number>, length: number) {
   let str = "";
-  let i = 0;
-  for (; i + 15 < codes.length; i += 16) {
+  let i: number = 0;
+  for (; i + 15 < length; i += 16) {
     str += StringFromCharCode(
       codes[i],
       codes[i + 1],
@@ -23,7 +23,7 @@ export function StringFromCharCodes(codes: ArrayLike<number>) {
       codes[i + 15],
     );
   }
-  for (; i < codes.length; i++) {
+  for (; i < length; i++) {
     str += StringFromCharCode(codes[i]);
   }
   return str;

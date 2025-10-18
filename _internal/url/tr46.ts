@@ -1,7 +1,13 @@
 // https://unpkg.com/tr46@5.1.0/index.js
 
 import { punycodeDecode, punycodeEncode } from "./punycode.ts";
-import mappingTable from "./mapping-table.js";
+import mappingTable_ from "./mapping-table.js";
+// make type visible to single file linter
+const mappingTable: [
+  number | [number, number],
+  number,
+  ...([] | [string]),
+][] = mappingTable_;
 import {
   ArrayPrototypeIndexOf,
   ArrayPrototypeJoin,
@@ -16,7 +22,11 @@ import {
   StringPrototypeSplit,
   StringPrototypeStartsWith,
 } from "../primordials.js";
-import { ArrayPrototypeMap, SafeRegExp } from "../primordial-utils.ts";
+import {
+  ArrayPrototypeMap,
+  type Safe,
+  SafeRegExp,
+} from "../primordial-utils.ts";
 import {
   bidiDomain,
   bidiS1LTR,
@@ -33,7 +43,17 @@ import {
 } from "./regexes.ts";
 import { codePointStrings } from "../codepoints.ts";
 
-const STATUS_MAPPING = {
+const STATUS_MAPPING: Safe<{
+  __proto__: null;
+  mapped: number;
+  valid: number;
+  disallowed: number;
+  disallowed_STD3_valid: number;
+  disallowed_STD3_mapped: number;
+  deviation: number;
+  ignored: number;
+}> = {
+  __proto__: null,
   mapped: 1,
   valid: 2,
   disallowed: 3,
@@ -60,7 +80,7 @@ function findStatus(
   while (start <= end) {
     const mid = ~~((start + end) / 2);
 
-    const target = mappingTable[mid]!;
+    const target = mappingTable[mid | 0]!;
     const min = typeof target[0] === "number" ? target[0] : target[0][0];
     const max = typeof target[0] === "number" ? target[0] : target[0][1];
 
@@ -82,7 +102,7 @@ function mapChars(
 ) {
   let processed = "";
 
-  const codePoints = codePointStrings(domainName);
+  const codePoints: string[] = codePointStrings(domainName);
   for (let i = 0; i < codePoints.length; i++) {
     const ch = codePoints[i];
     const { 1: status, 2: mapping } = findStatus(
@@ -139,8 +159,7 @@ function validateLabel(
     return false;
   }
 
-  const codePoints: Record<number, string> & { length: number } =
-    codePointStrings(label);
+  const codePoints: string[] = codePointStrings(label);
 
   // "2. If CheckHyphens, the label must not contain a U+002D HYPHEN-MINUS character in both the
   // third and fourth positions."
@@ -195,7 +214,7 @@ function validateLabel(
     // A-Z which are mapped in UTS #46 and disallowed in IDNA2008.)"
     if (useSTD3ASCIIRules && codePoint <= 0x7F) {
       // deno-lint-ignore prefer-primordials
-      if (!RegExpPrototypeTest(/^[a-z][0-9]-$/u, ch)) {
+      if (!RegExpPrototypeTest(/^(?:[a-z]|[0-9]|-)$/u, ch)) {
         return false;
       }
     }
@@ -292,7 +311,7 @@ function isBidiDomain(labels: string[]) {
   return RegExpPrototypeTest(bidiDomain, domain);
 }
 
-function processing(domainName: string, options: ConcreteOptions) {
+function processing(domainName: string, options: Safe<ConcreteOptions>) {
   // 1. Map.
   let string = mapChars(domainName, options);
 
@@ -300,7 +319,7 @@ function processing(domainName: string, options: ConcreteOptions) {
   string = StringPrototypeNormalize(string, "NFC");
 
   // 3. Break.
-  const labels = StringPrototypeSplit(string, ".");
+  const labels: string[] = StringPrototypeSplit(string, ".");
   const isBidi = isBidiDomain(labels);
 
   // 4. Convert/Validate.
@@ -372,7 +391,7 @@ export function toASCII(
     ignoreInvalidPunycode = false,
   }: ToASCIIOptions = ObjectCreate(null),
 ) {
-  const result = processing(domainName, {
+  const result: Safe<ReturnType<typeof processing>> = processing(domainName, {
     checkHyphens,
     checkBidi,
     checkJoiners,
@@ -380,7 +399,7 @@ export function toASCII(
     transitionalProcessing,
     ignoreInvalidPunycode,
   });
-  let labels = StringPrototypeSplit(result.string, ".");
+  let labels: string[] = StringPrototypeSplit(result.string, ".");
   labels = ArrayPrototypeMap(labels, (l) => {
     if (containsNonASCII(l)) {
       try {
@@ -393,13 +412,15 @@ export function toASCII(
   });
 
   if (verifyDNSLength) {
-    const total = ArrayPrototypeJoin(labels, ".").length;
+    const joined: string = ArrayPrototypeJoin(labels, ".");
+    const total = joined.length;
     if (total > 253 || total === 0) {
       result.error = true;
     }
 
     for (let i = 0; i < labels.length; ++i) {
-      if (labels[i]!.length > 63 || labels[i]!.length === 0) {
+      const label: string = labels[i]!;
+      if (label.length > 63 || label.length === 0) {
         result.error = true;
         break;
       }
@@ -458,7 +479,7 @@ export function toUnicode(
     ignoreInvalidPunycode = false,
   }: Options = ObjectCreate(null),
 ) {
-  const result = processing(domainName, {
+  const result: Safe<ReturnType<typeof processing>> = processing(domainName, {
     checkHyphens,
     checkBidi,
     checkJoiners,

@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// TODO: stop using symbol keys
+
 import type * as primordials from "./primordials.js";
 import {
   ArrayIteratorPrototype,
@@ -6,6 +7,7 @@ import {
   isNonSharedArrayBuffer,
   isSharedArrayBuffer,
   isTypedArray,
+  type Safe,
   SafeRegExp,
   SafeSet,
   TypedArrayPrototypeGetBuffer,
@@ -79,6 +81,7 @@ import {
   Uint32Array,
   Uint8Array,
   Uint8ClampedArray,
+  undefined,
 } from "./primordials.js";
 import type { URLSearchParams } from "../url.ts";
 
@@ -206,7 +209,7 @@ interface IntConverterOpts {
 
 function createIntegerConversion(
   bitLength: number,
-  typeOpts: { unsigned: boolean },
+  typeOpts: Safe<{ unsigned: boolean }>,
 ) {
   const isSigned = !typeOpts.unsigned;
 
@@ -230,7 +233,7 @@ function createIntegerConversion(
     V: unknown,
     prefix: string | undefined = undefined,
     context: string | undefined = undefined,
-    opts: IntConverterOpts = ObjectCreate(null),
+    opts: Safe<IntConverterOpts> = ObjectCreate(null),
   ) => {
     let x = toNumber(V);
     x = censorNegativeZero(x);
@@ -297,7 +300,7 @@ function createLongLongConversion(
     V: unknown,
     prefix: string | undefined = undefined,
     context: string | undefined = undefined,
-    opts: IntConverterOpts = ObjectCreate(null),
+    opts: Safe<IntConverterOpts> = ObjectCreate(null),
   ) => {
     let x = toNumber(V);
     x = censorNegativeZero(x);
@@ -728,37 +731,37 @@ export interface Converters {
     opts?: unknown,
   ) => URLSearchParams;
 }
-const safe_converters: Converters = ObjectCreate(null);
+const converters: Safe<Converters> = ObjectCreate(null);
 
-safe_converters.any = (V) => {
+converters.any = (V) => {
   return V;
 };
 
-safe_converters.boolean = function (val) {
+converters.boolean = function (val) {
   return !!val;
 };
 
-safe_converters.byte = createIntegerConversion(8, { unsigned: false });
-safe_converters.octet = createIntegerConversion(8, { unsigned: true });
+converters.byte = createIntegerConversion(8, { unsigned: false });
+converters.octet = createIntegerConversion(8, { unsigned: true });
 
-safe_converters.short = createIntegerConversion(16, { unsigned: false });
-safe_converters["unsigned short"] = createIntegerConversion(16, {
+converters.short = createIntegerConversion(16, { unsigned: false });
+converters["unsigned short"] = createIntegerConversion(16, {
   unsigned: true,
 });
 
-safe_converters.long = createIntegerConversion(32, { unsigned: false });
-safe_converters["unsigned long"] = createIntegerConversion(32, {
+converters.long = createIntegerConversion(32, { unsigned: false });
+converters["unsigned long"] = createIntegerConversion(32, {
   unsigned: true,
 });
 
-safe_converters["long long"] = createLongLongConversion(64, {
+converters["long long"] = createLongLongConversion(64, {
   unsigned: false,
 });
-safe_converters["unsigned long long"] = createLongLongConversion(64, {
+converters["unsigned long long"] = createLongLongConversion(64, {
   unsigned: true,
 });
 
-safe_converters.float = (V, prefix, context, _opts) => {
+converters.float = (V, prefix, context, _opts) => {
   const x = toNumber(V);
 
   if (!NumberIsFinite(x)) {
@@ -788,7 +791,7 @@ safe_converters.float = (V, prefix, context, _opts) => {
   return y;
 };
 
-safe_converters["unrestricted float"] = (V, _prefix, _context, _opts) => {
+converters["unrestricted float"] = (V, _prefix, _context, _opts) => {
   const x = toNumber(V);
 
   if (NumberIsNaN(x)) {
@@ -802,7 +805,7 @@ safe_converters["unrestricted float"] = (V, _prefix, _context, _opts) => {
   return MathFround(x);
 };
 
-safe_converters.double = (V, prefix, context, _opts) => {
+converters.double = (V, prefix, context, _opts) => {
   const x = toNumber(V);
 
   if (!NumberIsFinite(x)) {
@@ -817,17 +820,17 @@ safe_converters.double = (V, prefix, context, _opts) => {
   return x;
 };
 
-safe_converters["unrestricted double"] = (V, _prefix, _context, _opts) => {
+converters["unrestricted double"] = (V, _prefix, _context, _opts) => {
   const x = toNumber(V);
 
   return x;
 };
 
-safe_converters.DOMString = function (
+converters.DOMString = function (
   V,
   prefix,
   context,
-  opts = ObjectCreate(null),
+  opts: Safe<StringConverterOpts> = ObjectCreate(null),
 ) {
   if (typeof V === "string") {
     return V;
@@ -855,8 +858,8 @@ function isByteString(input: string) {
   return true;
 }
 
-safe_converters.ByteString = (V, prefix, context, opts) => {
-  const x = safe_converters.DOMString(V, prefix, context, opts);
+converters.ByteString = (V, prefix, context, opts) => {
+  const x = converters.DOMString(V, prefix, context, opts);
   if (!isByteString(x)) {
     throw makeException(
       TypeError,
@@ -868,12 +871,12 @@ safe_converters.ByteString = (V, prefix, context, opts) => {
   return x;
 };
 
-safe_converters.USVString = (V, prefix, context, opts) => {
-  const S = safe_converters.DOMString(V, prefix, context, opts);
+converters.USVString = (V, prefix, context, opts) => {
+  const S = converters.DOMString(V, prefix, context, opts);
   return StringPrototypeToWellFormed(S);
 };
 
-safe_converters.object = (V, prefix, context, _opts) => {
+converters.object = (V, prefix, context, _opts) => {
   if (type(V) !== "Object") {
     throw makeException(TypeError, "is not an object", prefix, context);
   }
@@ -897,11 +900,11 @@ function convertCallbackFunction(
   return V as (...args: unknown[]) => unknown;
 }
 
-safe_converters.ArrayBuffer = (
+converters.ArrayBuffer = (
   V,
   prefix = undefined,
   context = undefined,
-  opts = ObjectCreate(null),
+  opts: Safe<BufferConverterOpts> = ObjectCreate(null),
 ) => {
   if (!isNonSharedArrayBuffer(V)) {
     if (opts.allowShared && !isSharedArrayBuffer(V)) {
@@ -918,11 +921,11 @@ safe_converters.ArrayBuffer = (
   return V as ArrayBuffer;
 };
 
-safe_converters.DataView = (
+converters.DataView = (
   V,
   prefix = undefined,
   context = undefined,
-  opts = ObjectCreate(null),
+  opts: Safe<BufferConverterOpts> = ObjectCreate(null),
 ) => {
   if (!isDataView(V)) {
     throw makeException(TypeError, "is not a DataView", prefix, context);
@@ -955,6 +958,7 @@ ArrayPrototypeForEach(
     Float64Array,
   ],
   (func) => {
+    // deno-lint-ignore no-property-access/no-property-access
     const name = func.name as
       | "Int8Array"
       | "Int16Array"
@@ -968,11 +972,11 @@ ArrayPrototypeForEach(
     const article = RegExpPrototypeTest(new SafeRegExp(/^[AEIOU]/), name)
       ? "an"
       : "a";
-    safe_converters[name] = (
+    converters[name] = (
       V,
       prefix = undefined,
       context = undefined,
-      opts = ObjectCreate(null),
+      opts: Safe<BufferConverterOpts> = ObjectCreate(null),
     ) => {
       if (TypedArrayPrototypeGetSymbolToStringTag(V) !== name) {
         throw makeException(
@@ -1002,11 +1006,11 @@ ArrayPrototypeForEach(
 
 // Common definitions
 
-safe_converters.ArrayBufferView = (
+converters.ArrayBufferView = (
   V,
   prefix = undefined,
   context = undefined,
-  opts = ObjectCreate(null),
+  opts: Safe<BufferConverterOpts> = ObjectCreate(null),
 ) => {
   if (!ArrayBufferIsView(V)) {
     throw makeException(
@@ -1034,11 +1038,11 @@ safe_converters.ArrayBufferView = (
   return V;
 };
 
-safe_converters.BufferSource = (
+converters.BufferSource = (
   V,
   prefix = undefined,
   context = undefined,
-  opts = ObjectCreate(null),
+  opts: Safe<BufferConverterOpts> = ObjectCreate(null),
 ) => {
   if (ArrayBufferIsView(V)) {
     if (!opts.allowShared) {
@@ -1085,42 +1089,42 @@ safe_converters.BufferSource = (
   return V as ArrayBuffer;
 };
 
-safe_converters.DOMTimeStamp = safe_converters["unsigned long long"];
-safe_converters.DOMHighResTimeStamp = safe_converters["double"];
+converters.DOMTimeStamp = converters["unsigned long long"];
+converters.DOMHighResTimeStamp = converters["double"];
 
-safe_converters.Function = convertCallbackFunction;
+converters.Function = convertCallbackFunction;
 
-safe_converters.VoidFunction = convertCallbackFunction;
+converters.VoidFunction = convertCallbackFunction;
 
-safe_converters["UVString?"] = createNullableConverter(
-  safe_converters.USVString,
+converters["UVString?"] = createNullableConverter(
+  converters.USVString,
 );
-safe_converters["sequence<double>"] = createSequenceConverter(
-  safe_converters.double,
+converters["sequence<double>"] = createSequenceConverter(
+  converters.double,
 );
-safe_converters["sequence<object>"] = createSequenceConverter(
-  safe_converters.object,
+converters["sequence<object>"] = createSequenceConverter(
+  converters.object,
 );
-safe_converters["Promise<undefined>"] = createPromiseConverter(() => undefined);
+converters["Promise<undefined>"] = createPromiseConverter(() => undefined);
 
-safe_converters["sequence<ByteString>"] = createSequenceConverter(
-  safe_converters.ByteString,
+converters["sequence<ByteString>"] = createSequenceConverter(
+  converters.ByteString,
 );
-safe_converters["sequence<sequence<ByteString>>"] = createSequenceConverter(
-  safe_converters["sequence<ByteString>"],
+converters["sequence<sequence<ByteString>>"] = createSequenceConverter(
+  converters["sequence<ByteString>"],
 );
-safe_converters["record<ByteString, ByteString>"] = createRecordConverter(
-  safe_converters.ByteString,
-  safe_converters.ByteString,
+converters["record<ByteString, ByteString>"] = createRecordConverter(
+  converters.ByteString,
+  converters.ByteString,
 );
 
-safe_converters["sequence<USVString>"] = createSequenceConverter(
-  safe_converters.USVString,
+converters["sequence<USVString>"] = createSequenceConverter(
+  converters.USVString,
 );
-safe_converters["sequence<sequence<USVString>>"] = createSequenceConverter(
-  safe_converters["sequence<USVString>"],
+converters["sequence<sequence<USVString>>"] = createSequenceConverter(
+  converters["sequence<USVString>"],
 );
-safe_converters[
+converters[
   "sequence<sequence<USVString>> or record<USVString, USVString> or USVString"
 ] = (
   V: unknown,
@@ -1131,30 +1135,31 @@ safe_converters[
   // Union for (sequence<sequence<USVString>> or record<USVString, USVString> or USVString)
   if (type(V) === "Object" && V !== null) {
     // @ts-ignore needed for correct semantics
+    // deno-lint-ignore no-property-access/no-property-access
     if (V[SymbolIterator] !== undefined) {
-      return safe_converters["sequence<sequence<USVString>>"]!(
+      return converters["sequence<sequence<USVString>>"]!(
         V,
         prefix,
         context,
         opts,
       );
     }
-    return safe_converters["record<USVString, USVString>"]!(
+    return converters["record<USVString, USVString>"]!(
       V,
       prefix,
       context,
       opts,
     );
   }
-  return safe_converters.USVString(V, prefix, context, opts);
+  return converters.USVString(V, prefix, context, opts);
 };
-safe_converters["record<USVString, USVString>"] = createRecordConverter(
-  safe_converters.USVString,
-  safe_converters.USVString,
+converters["record<USVString, USVString>"] = createRecordConverter(
+  converters.USVString,
+  converters.USVString,
 );
 
-safe_converters["sequence<DOMString>"] = createSequenceConverter(
-  safe_converters.DOMString,
+converters["sequence<DOMString>"] = createSequenceConverter(
+  converters.DOMString,
 );
 
 function requiredArguments(
@@ -1198,41 +1203,45 @@ type DictionaryType<T extends Dictionary> = T extends unknown ? {
   }
   : never;
 
-function createDictionaryConverter<T extends Dictionary[]>(
+function createDictionaryConverter<const T extends Dictionary>(
   name: string,
-  ...dictionaries: T
+  ...dictionaries: T[]
 ): (
   v: unknown,
   prefix?: string,
   context?: string,
   opts?: unknown,
-) => DictionaryType<T[number]> {
+) => DictionaryType<T> {
   let hasRequiredKey = false;
   const allMembers: DictionaryMember[] = [];
   for (let i = 0; i < dictionaries.length; ++i) {
-    const members = dictionaries[i]!;
+    const members: [...T] = dictionaries[i]!;
     for (let j = 0; j < members.length; ++j) {
-      const member = members[j]!;
+      const member: Safe<[...T][number]> = members[j]!;
       if (member.required) {
         hasRequiredKey = true;
       }
       ArrayPrototypePush(allMembers, member);
     }
   }
-  ArrayPrototypeSort(allMembers, (a, b) => {
-    if (a.key == b.key) {
-      return 0;
-    }
-    return a.key < b.key ? -1 : 1;
-  });
+  ArrayPrototypeSort(
+    allMembers,
+    (a: Safe<DictionaryMember>, b: Safe<DictionaryMember>) => {
+      if (a.key == b.key) {
+        return 0;
+      }
+      return a.key < b.key ? -1 : 1;
+    },
+  );
 
-  const defaultValues = ObjectCreate(null);
+  // deno-lint-ignore no-explicit-any
+  const defaultValues: Safe<any> = ObjectCreate(null);
   for (let i = 0; i < allMembers.length; ++i) {
-    const safe_member = allMembers[i]!;
+    const member: Safe<DictionaryMember> = allMembers[i]!;
     // safe to call props because proto is null
-    void (safe_member.__proto__ satisfies null);
-    if (ReflectHas(safe_member, "defaultValue")) {
-      const idlMemberValue = safe_member.defaultValue;
+    void (member.__proto__ satisfies null);
+    if (ReflectHas(member, "defaultValue")) {
+      const idlMemberValue = member.defaultValue;
       const imvType = typeof idlMemberValue;
       // Copy by value types can be directly assigned, copy by reference types
       // need to be re-created for each allocation.
@@ -1243,14 +1252,14 @@ function createDictionaryConverter<T extends Dictionary[]>(
         imvType === "bigint" ||
         imvType === "undefined"
       ) {
-        defaultValues[safe_member.key] = safe_member.converter(idlMemberValue);
+        defaultValues[member.key] = member.converter(idlMemberValue);
       } else {
-        ObjectDefineProperty(defaultValues, safe_member.key, {
+        ObjectDefineProperty(defaultValues, member.key, {
           __proto__: null,
           get() {
-            return safe_member.converter(
+            return member.converter(
               idlMemberValue,
-              safe_member.key,
+              member.key,
             );
           },
           enumerable: true,
@@ -1279,9 +1288,13 @@ function createDictionaryConverter<T extends Dictionary[]>(
           context,
         );
     }
-    const esDict = V as Record<PropertyKey, unknown> | null | undefined;
+    const esDict: Safe<Record<PropertyKey, unknown> | null | undefined> = V as
+      | Record<PropertyKey, unknown>
+      | null
+      | undefined;
 
-    const idlDict = ObjectAssign({}, defaultValues);
+    // deno-lint-ignore no-explicit-any
+    const idlDict: Safe<any> = ObjectAssign({}, defaultValues);
 
     // NOTE: fast path Null and Undefined.
     if ((V === undefined || V === null) && !hasRequiredKey) {
@@ -1289,7 +1302,7 @@ function createDictionaryConverter<T extends Dictionary[]>(
     }
 
     for (let i = 0; i < allMembers.length; ++i) {
-      const member = allMembers[i]!;
+      const member: Safe<DictionaryMember> = allMembers[i]!;
       const key = member.key;
 
       let esMemberValue;
@@ -1331,7 +1344,7 @@ function createEnumConverter(
   name: string,
   values: string[],
 ): (v: unknown, prefix?: string, context?: string, opts?: unknown) => string {
-  const safe_enumValues = new SafeSet(values);
+  const enumValues: Safe<Set<string>> = new SafeSet(values);
 
   return function (
     V,
@@ -1341,7 +1354,7 @@ function createEnumConverter(
   ) {
     const S = String(V);
 
-    if (!safe_enumValues.has(S)) {
+    if (!enumValues.has(S)) {
       throw new TypeError(
         `${
           prefix ? prefix + ": " : ""
@@ -1392,6 +1405,7 @@ function createSequenceConverter<T, O>(
       );
     }
     // @ts-expect-error unsafely trying to iterate
+    // deno-lint-ignore no-property-access/no-property-access
     const iter = V?.[SymbolIterator]?.();
     if (iter === undefined) {
       throw makeException(
@@ -1403,7 +1417,7 @@ function createSequenceConverter<T, O>(
     }
     const array: T[] = [];
     while (true) {
-      // eslint-disable-next-line no-restricted-syntax
+      // deno-lint-ignore no-property-access/no-property-access
       const res = iter?.next?.();
       if (res === undefined) {
         throw makeException(
@@ -1413,8 +1427,10 @@ function createSequenceConverter<T, O>(
           context,
         );
       }
+      // deno-lint-ignore no-property-access/no-property-access
       if (res.done === true) break;
       const val = converter(
+        // deno-lint-ignore no-property-access/no-property-access
         res.value,
         prefix,
         `${context}, index ${array.length}`,
@@ -1461,9 +1477,11 @@ function createAsyncIterableConverter<T>(
 
     let isAsync = true;
     // @ts-expect-error type checking
+    // deno-lint-ignore no-property-access/no-property-access
     let method = V[SymbolAsyncIterator];
     if (method === undefined) {
       // @ts-expect-error type checking
+      // deno-lint-ignore no-property-access/no-property-access
       method = V[SymbolIterator];
 
       if (method === undefined) {
@@ -1493,7 +1511,7 @@ function createAsyncIterableConverter<T>(
           asyncIterator = {
             // deno-lint-ignore require-await
             async next() {
-              // deno-lint-ignore prefer-primordials
+              // deno-lint-ignore no-property-access/no-property-access
               return iter.next();
             },
           };
@@ -1501,7 +1519,7 @@ function createAsyncIterableConverter<T>(
 
         return {
           async next(_?: unknown) {
-            // deno-lint-ignore prefer-primordials
+            // deno-lint-ignore no-property-access/no-property-access
             const iterResult = await asyncIterator.next();
             if (type(iterResult) !== "Object") {
               throw TypeError(
@@ -1513,11 +1531,13 @@ function createAsyncIterableConverter<T>(
               );
             }
 
+            // deno-lint-ignore no-property-access/no-property-access
             if (iterResult.done) {
               return { done: true, value: undefined };
             }
 
             const iterValue = converter(
+              // deno-lint-ignore no-property-access/no-property-access
               iterResult.value,
               `${context} failed to iterate next value`,
               `The value returned from the next() method`,
@@ -1527,11 +1547,12 @@ function createAsyncIterableConverter<T>(
             return { done: false, value: iterValue };
           },
           async return(reason?: unknown) {
+            // deno-lint-ignore no-property-access/no-property-access
             if (asyncIterator.return === undefined) {
               return { value: undefined, done: true };
             }
 
-            // deno-lint-ignore prefer-primordials
+            // deno-lint-ignore no-property-access/no-property-access
             const returnPromiseResult = await asyncIterator.return(reason);
             if (type(returnPromiseResult) !== "Object") {
               throw TypeError(
@@ -1577,7 +1598,8 @@ function createRecordConverter<K extends string | number | symbol, V, O>(
         context,
       );
     }
-    const result = ObjectCreate(null);
+    // deno-lint-ignore no-explicit-any
+    const result: Safe<any> = ObjectCreate(null);
     /*// Fast path for common case (not a Proxy)
     // eslint-disable-next-line no-constant-condition
     if (!core.isProxy(V)) {
@@ -1593,12 +1615,14 @@ function createRecordConverter<K extends string | number | symbol, V, O>(
       return result;
     }*/
     // Slow path if Proxy (e.g: in WPT tests)
-    const keys = ReflectOwnKeys(V as object);
+    const keys: PropertyKey[] = ReflectOwnKeys(V as object);
     for (let i = 0; i < keys.length; ++i) {
       const key = keys[i]!;
       const desc = ObjectGetOwnPropertyDescriptor(V, key);
+      // deno-lint-ignore no-property-access/no-property-access
       if (desc !== undefined && desc.enumerable === true) {
         const typedKey = keyConverter(key, prefix, context, opts);
+        // deno-lint-ignore no-property-access/no-property-access
         const value = (V as Record<PropertyKey, unknown>)[key];
         const typedValue = valueConverter(value, prefix, context, opts);
         result[typedKey] = typedValue;
@@ -1625,6 +1649,7 @@ function createPromiseConverter<T>(
     // should be able to handle thenables
     // see: https://github.com/web-platform-tests/wpt/blob/a31d3ba53a79412793642366f3816c9a63f0cf57/streams/writable-streams/close.any.js#L207
     // @ts-expect-error needed for right semantics
+    // deno-lint-ignore no-property-access/no-property-access
     typeof V?.then === "function"
       ? (PromisePrototypeThen(PromiseResolve(V), (V) =>
         converter(V, prefix, context, opts)) satisfies primordials.Promise<
@@ -1702,7 +1727,7 @@ function illegalConstructor() {
 }
 
 function define(target: object, source: object) {
-  const keys = ReflectOwnKeys(source);
+  const keys: PropertyKey[] = ReflectOwnKeys(source);
   for (let i = 0; i < keys.length; ++i) {
     const key = keys[i]!;
     const descriptor = ReflectGetOwnPropertyDescriptor(source, key);
@@ -1722,7 +1747,7 @@ function mixinPairIterable<
   VK extends PropertyKey,
 >(
   name: string,
-  prototype: T,
+  prototype: Safe<T>,
   // deno-lint-ignore no-explicit-any
   getData: (o: InstanceType<T>) => (Record<KK, any> & Record<VK, any>)[],
   assertion: (v: object) => v is object & InstanceType<T>,
@@ -1738,20 +1763,24 @@ function mixinPairIterable<
   });
   define(iteratorPrototype, {
     next() {
-      // deno-lint-ignore no-explicit-any
-      const internal = this && (this as any)[_iteratorInternal];
+      // deno-lint-ignore no-property-access/no-property-access, no-explicit-any
+      const internal: Safe<any> = this && (this as any)[_iteratorInternal];
       if (!internal) {
         throw new TypeError(
           `next() called on a value that is not a ${name} iterator object`,
         );
       }
       const { target, kind, index } = internal;
-      const values = getData(target);
+      // deno-lint-ignore no-explicit-any
+      const values: Safe<(Record<KK, any> & Record<VK, any>)[]> = getData(
+        target,
+      );
       const len = values.length;
       if (index >= len) {
         return { value: undefined, done: true };
       }
-      const pair = values[index]!;
+      // deno-lint-ignore no-explicit-any
+      const pair: Safe<Record<KK, any> & Record<VK, any>> = values[index]!;
       internal.index = index + 1;
       let result;
       switch (kind) {
@@ -1825,7 +1854,7 @@ function mixinPairIterable<
         assertBranded(this, assertion);
         const prefix = `Failed to execute 'forEach' on '${name}'`;
         requiredArguments(arguments.length, 1, prefix);
-        let parsedIdlCallback = safe_converters["Function"](
+        let parsedIdlCallback = converters["Function"](
           idlCallback,
           prefix,
           "Argument 1",
@@ -1834,9 +1863,11 @@ function mixinPairIterable<
           parsedIdlCallback,
           thisArg ?? globalThis,
         );
-        const pairs = getData(this);
+        // deno-lint-ignore no-explicit-any
+        const pairs: (Record<KK, any> & Record<VK, any>)[] = getData(this);
         for (let i = 0; i < pairs.length; i++) {
-          const entry = pairs[i]!;
+          // deno-lint-ignore no-explicit-any
+          const entry: Safe<Record<KK, any> & Record<VK, any>> = pairs[i]!;
           parsedIdlCallback(entry[valueKey], entry[keyKey], this);
         }
       },
@@ -1849,7 +1880,7 @@ function mixinPairIterable<
 }
 
 function configureInterface<N extends string>(
-  interface_: { prototype: object; name: N },
+  interface_: Safe<{ prototype: object; name: N }>,
   name: N,
 ) {
   configureProperties(interface_);
@@ -1866,14 +1897,15 @@ function configureInterface<N extends string>(
 }
 
 function configureProperties(obj: object) {
-  const descriptors = ObjectGetOwnPropertyDescriptors(obj);
+  const descriptors: Safe<PropertyDescriptorMap> =
+    ObjectGetOwnPropertyDescriptors(obj);
   for (const key in descriptors) {
     if (!ObjectHasOwn(descriptors, key)) {
       continue;
     }
     if (key === "constructor") continue;
     if (key === "prototype") continue;
-    const descriptor = descriptors[key]!;
+    const descriptor: Safe<PropertyDescriptor> = descriptors[key]!;
     if (
       ReflectHas(descriptor, "value") &&
       typeof descriptor.value === "function"
@@ -1909,6 +1941,7 @@ function setlike(
       enumerable: true,
       get() {
         assertBranded(this, assertion);
+        // deno-lint-ignore no-property-access/no-property-access
         return obj[setlikeInner].size;
       },
     },
@@ -1919,7 +1952,7 @@ function setlike(
       writable: true,
       value() {
         assertBranded(this, assertion);
-        // eslint-disable-next-line no-restricted-syntax
+        // deno-lint-ignore no-property-access/no-property-access
         return obj[setlikeInner][SymbolIterator]();
       },
     },
@@ -1930,6 +1963,7 @@ function setlike(
       writable: true,
       value() {
         assertBranded(this, assertion);
+        // deno-lint-ignore no-property-access/no-property-access
         return SetPrototypeEntries(obj[setlikeInner]);
       },
     },
@@ -1940,6 +1974,7 @@ function setlike(
       writable: true,
       value() {
         assertBranded(this, assertion);
+        // deno-lint-ignore no-property-access/no-property-access
         return SetPrototypeKeys(obj[setlikeInner]);
       },
     },
@@ -1950,6 +1985,7 @@ function setlike(
       writable: true,
       value() {
         assertBranded(this, assertion);
+        // deno-lint-ignore no-property-access/no-property-access
         return SetPrototypeValues(obj[setlikeInner]);
       },
     },
@@ -1967,6 +2003,7 @@ function setlike(
         thisArg?: unknown,
       ) {
         assertBranded(this, assertion);
+        // deno-lint-ignore no-property-access/no-property-access
         return SetPrototypeForEach(obj[setlikeInner], callbackfn, thisArg);
       },
     },
@@ -1977,6 +2014,7 @@ function setlike(
       writable: true,
       value(value: unknown) {
         assertBranded(this, assertion);
+        // deno-lint-ignore no-property-access/no-property-access
         return SetPrototypeHas(obj[setlikeInner], value);
       },
     },
@@ -1991,6 +2029,7 @@ function setlike(
         writable: true,
         value(value: unknown) {
           assertBranded(this, assertion);
+          // deno-lint-ignore no-property-access/no-property-access
           return SetPrototypeAdd(obj[setlikeInner], value);
         },
       },
@@ -2001,6 +2040,7 @@ function setlike(
         writable: true,
         value(value: unknown) {
           assertBranded(this, assertion);
+          // deno-lint-ignore no-property-access/no-property-access
           return SetPrototypeDelete(obj[setlikeInner], value);
         },
       },
@@ -2011,6 +2051,7 @@ function setlike(
         writable: true,
         value() {
           assertBranded(this, assertion);
+          // deno-lint-ignore no-property-access/no-property-access
           return SetPrototypeClear(obj[setlikeInner]);
         },
       },
@@ -2021,6 +2062,7 @@ function setlike(
 export {
   assertBranded,
   configureInterface,
+  converters,
   createAsyncIterableConverter,
   createDictionaryConverter,
   createEnumConverter,
@@ -2034,7 +2076,6 @@ export {
   makeException,
   mixinPairIterable,
   requiredArguments,
-  safe_converters as converters,
   setlike,
   setlikeInner,
   type,

@@ -9,8 +9,9 @@
     "./console/unstable-ansi": "./console/unstable-ansi.ts"
   },
   "lint": {
+    "plugins": ["./_internal/tests/lint-plugin.ts"],
     "rules": {
-      "include": ["prefer-primordials", "no-undef"]
+      "exclude": ["no-import-prefix"]
     }
   },
   "tasks": {
@@ -24,5 +25,8 @@
   },
   "publish": {
     "exclude": ["_internal/tests", "_internal/**/update-*"]
+  },
+  "compilerOptions": {
+    "noErrorTruncation": true
   }
 }

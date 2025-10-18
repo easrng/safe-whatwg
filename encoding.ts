@@ -13,8 +13,10 @@ import {
   TypeError,
   Uint16Array,
   Uint8Array,
+  undefined,
 } from "./_internal/primordials.js";
 import {
+  type Safe,
   TypedArrayPrototypeGetBuffer,
   TypedArrayPrototypeGetByteLength,
   TypedArrayPrototypeGetByteOffset,
@@ -50,14 +52,14 @@ function op_encoding_normalize_label(label: string) {
   );
   try {
     for (let i = 0; i < label.length; i++) {
-      HEAPU8[ptr + i] = StringPrototypeCharCodeAt(label, i);
+      HEAPU8[(ptr + i) | 0] = StringPrototypeCharCodeAt(label, i);
     }
     const encoding = encoding_for_label_no_replacement(ptr, label.length);
     if (!encoding) return null;
     let name = "";
     const nameLen = encoding_name(encoding, ptr);
     for (let i = 0; i < nameLen; i++) {
-      const cc = HEAPU8[ptr + i]!;
+      const cc = HEAPU8[(ptr + i) | 0]!;
       name += StringFromCharCode(cc > 64 && cc < 91 ? 0x20 | cc : cc);
     }
     return { encoding, label: name };
@@ -68,6 +70,7 @@ function op_encoding_normalize_label(label: string) {
 
 let isTextDecoder: (v: object) => v is TextDecoder;
 const EMPTY = new Uint8Array();
+const converters: Safe<typeof webidl.converters> = webidl.converters;
 class TextDecoder {
   static {
     // deno-lint-ignore prefer-primordials
@@ -88,16 +91,18 @@ class TextDecoder {
    */
   constructor(
     label: string = "utf-8",
-    options: TextDecoderOptions = ({ __proto__: null } as TextDecoderOptions),
+    unsafeOptions: TextDecoderOptions =
+      ({ __proto__: null } as TextDecoderOptions),
   ) {
     const prefix = "Failed to construct 'TextDecoder'";
-    label = webidl.converters.DOMString(label, prefix, "Argument 1");
-    options = webidl.converters.TextDecoderOptions(
-      options,
+    label = converters.DOMString(label, prefix, "Argument 1");
+    const options: Safe<TextDecoderOptions> = converters.TextDecoderOptions(
+      unsafeOptions,
       prefix,
       "Argument 2",
     );
-    const encoding = op_encoding_normalize_label(label);
+    const encoding: Safe<ReturnType<typeof op_encoding_normalize_label>> =
+      op_encoding_normalize_label(label);
     if (!encoding) {
       throw new RangeError(
         `The encoding label provided ('${label}') is invalid.`,
@@ -133,18 +138,21 @@ class TextDecoder {
    * @param {TextDecodeOptions} options
    */
   decode(
-    input: BufferSource = EMPTY,
-    options: TextDecodeOptions | undefined = undefined,
+    input:
+      | ArrayBufferView<ArrayBuffer | SharedArrayBuffer>
+      | ArrayBuffer
+      | SharedArrayBuffer = EMPTY,
+    unsafeOptions: TextDecodeOptions | undefined = undefined,
   ): string {
     webidl.assertBranded(this, isTextDecoder);
     const prefix = "Failed to execute 'decode' on 'TextDecoder'";
-    input = webidl.converters.BufferSource(input, prefix, "Argument 1", {
+    input = converters.BufferSource(input, prefix, "Argument 1", {
       allowShared: true,
     });
     let stream = false;
-    if (options !== undefined) {
-      options = webidl.converters.TextDecodeOptions(
-        options,
+    if (unsafeOptions !== undefined) {
+      const options: Safe<TextDecodeOptions> = converters.TextDecodeOptions(
+        unsafeOptions,
         prefix,
         "Argument 2",
       );
@@ -195,11 +203,15 @@ class TextDecoder {
       if (this.#fast) {
         const u8 = new Uint8Array(buffer, byteOffset, byteLength);
         let asciiPrefix = 0;
-        while (asciiPrefix < u8.length && !(u8[asciiPrefix] & 0x80)) {
+        while (
+          asciiPrefix < TypedArrayPrototypeGetByteLength(u8) &&
+          !(u8[asciiPrefix | 0] & 0x80)
+        ) {
           asciiPrefix++;
         }
         prefix = StringFromCharCodes(
           new Uint8Array(buffer, byteOffset, asciiPrefix),
+          asciiPrefix,
         );
         byteLength = byteLength - asciiPrefix;
         byteOffset = byteOffset + asciiPrefix;
@@ -263,13 +275,14 @@ class TextDecoder {
           +!stream,
           buf + o_had_replacements,
         );
-        const had_replacements = HEAPU8[buf + o_had_replacements];
+        const had_replacements = HEAPU8[(buf + o_had_replacements) | 0];
         if (had_replacements && this.#fatal) {
           throw new TypeError("The encoded data is not valid");
         }
         const written = HEAPU32[(buf + o_dst_len) >> 2];
         return prefix + StringFromCharCodes(
           new Uint16Array(encodingBuffer, buf + o_dst, written),
+          written,
         );
       } finally {
         __rust_dealloc(buf, size, 4);
@@ -307,13 +320,17 @@ class TextEncoder {
     webidl.assertBranded(this, isTextEncoder);
     // The WebIDL type of `input` is `USVString`, but `core.encode` already
     // converts lone surrogates to the replacement character.
-    input = webidl.converters.DOMString(
+    input = converters.DOMString(
       input,
       "Failed to execute 'encode' on 'TextEncoder'",
       "Argument 1",
     );
     const buffer = new Uint8Array(input.length * 3);
-    const result = TextEncoderEncodeInto(this, input, buffer);
+    const result: Safe<TextEncoderEncodeIntoResult> = TextEncoderEncodeInto(
+      this,
+      input,
+      buffer,
+    );
     return TypedArrayPrototypeSlice(buffer, 0, result.written);
   }
 
@@ -330,8 +347,8 @@ class TextEncoder {
     const prefix = "Failed to execute 'encodeInto' on 'TextEncoder'";
     // The WebIDL type of `source` is `USVString`, but the encoder should
     // already convert lone surrogates to the replacement character.
-    source = webidl.converters.DOMString(source, prefix, "Argument 1");
-    destination = webidl.converters.Uint8Array(
+    source = converters.DOMString(source, prefix, "Argument 1");
+    destination = converters.Uint8Array(
       destination,
       prefix,
       "Argument 2",
@@ -339,7 +356,8 @@ class TextEncoder {
         allowShared: true,
       },
     );
-    const checkFit = source.length * 3 > destination.length;
+    const checkFit =
+      source.length * 3 > TypedArrayPrototypeGetByteLength(destination);
     let read = 0, written = 0;
     for (let i = 0; i < source.length; i++) {
       let codePoint = StringPrototypeCodePointAt(source, i)!;
@@ -353,7 +371,10 @@ class TextEncoder {
         : (codePoint <= 0xffff)
         ? 3
         : (i++, 4);
-      if (checkFit && written + bytesNeeded > destination.length) break;
+      if (
+        checkFit &&
+        written + bytesNeeded > TypedArrayPrototypeGetByteLength(destination)
+      ) break;
       if (codePoint <= 0x7f) {
         destination[written++] = codePoint;
       } else if (codePoint <= 0x7ff) {
@@ -376,33 +397,34 @@ class TextEncoder {
   }
 }
 
+// deno-lint-ignore no-property-access/no-property-access
 const TextEncoderEncodeInto = uncurryThis(TextEncoder.prototype.encodeInto);
 
 webidl.configureInterface(TextEncoder, "TextEncoder");
 
-webidl.converters.TextDecoderOptions = webidl.createDictionaryConverter(
+converters.TextDecoderOptions = webidl.createDictionaryConverter(
   "TextDecoderOptions",
   [
     {
       key: "fatal",
-      converter: webidl.converters.boolean,
+      converter: converters.boolean,
       defaultValue: false,
       __proto__: null,
     },
     {
       key: "ignoreBOM",
-      converter: webidl.converters.boolean,
+      converter: converters.boolean,
       defaultValue: false,
       __proto__: null,
     },
   ],
 );
-webidl.converters.TextDecodeOptions = webidl.createDictionaryConverter(
+converters.TextDecodeOptions = webidl.createDictionaryConverter(
   "TextDecodeOptions",
   [
     {
       key: "stream",
-      converter: webidl.converters.boolean,
+      converter: converters.boolean,
       defaultValue: false,
       __proto__: null,
     },

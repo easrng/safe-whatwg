@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-property-access/no-property-access
 import { deepEqual } from "node:assert";
 import {
   ArrayIsArray,
@@ -7,7 +8,7 @@ import {
 } from "../primordials.js";
 
 const raw = await (
-  await fetch("https://cdn.jsdelivr.net/npm/tr46@5.1.0/lib/mappingTable.json")
+  await fetch("https://cdn.jsdelivr.net/npm/tr46@6.0.0/lib/mappingTable.json")
 ).text();
 const t: [
   number | [number, number],
@@ -29,7 +30,7 @@ for (let i = 0; i < t.length; i++) {
 }
 
 const decomp =
-  `// @ts-self-types="./mapping-table.d.ts"\n// deno-fmt-ignore-file\n// deno-lint-ignore prefer-const\nlet i,e,p=0,a=${
+  `// @ts-self-types="./mapping-table.d.ts"\n// deno-fmt-ignore-file\n// deno-lint-ignore prefer-const no-property-access/no-property-access\nlet i,e,p=0,a=${
     JSONStringify(t)
   };for(i=0;i<a.length;i++)e=a[i][0],e[1]?(e[0]=p+=e[0],e[1]=p+=e[1]):a[i][0]=p+=e`;
 deepEqual(

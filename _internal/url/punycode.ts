@@ -9,7 +9,7 @@ import {
   StringPrototypeCharCodeAt,
   StringPrototypeLastIndexOf,
 } from "../primordials.js";
-import { SafeArrayIterator } from "../primordial-utils.ts";
+import { type Safe, SafeArrayIterator } from "../primordial-utils.ts";
 
 /** Highest positive signed 32-bit float value */
 const maxInt = 2147483647; // aka. 0x7FFFFFFF or 2^31-1
@@ -25,7 +25,12 @@ const initialN = 128; // 0x80
 const delimiter = "-"; // '\x2D'
 
 /** Error messages */
-const errors = {
+const errors: Safe<{
+  __proto__: null;
+  overflow: string;
+  "not-basic": string;
+  "invalid-input": string;
+}> = {
   __proto__: null,
   overflow: "Overflow: input needs wider integers to process",
   "not-basic": "Illegal input >= 0x80 (not a basic code point)",
@@ -246,7 +251,7 @@ export const punycodeEncode = function (inputStr: string) {
   const output: string[] = [];
 
   // Convert the input in UCS-2 to an array of Unicode code points.
-  const input = ucs2decode(inputStr);
+  const input: number[] = ucs2decode(inputStr);
 
   // Cache the length.
   const inputLength = input.length;

@@ -20,12 +20,18 @@ import {
   utf8PercentEncodeString,
 } from "./percent-encoding.ts";
 
-import { SafeArrayIterator, SafeSet } from "../primordial-utils.ts";
+import {
+  type Safe,
+  SafeArrayIterator,
+  SafeSet,
+  TypedArrayPrototypeGetByteLength,
+} from "../primordial-utils.ts";
 import {
   ArrayIsArray,
   ArrayPrototypePop,
   ArrayPrototypePush,
   ArrayPrototypeSlice,
+  Error,
   FunctionPrototypeBind,
   isNaN,
   MathFloor,
@@ -47,11 +53,13 @@ import {
   StringPrototypeSplit,
   StringPrototypeToLowerCase,
   Symbol,
+  undefined,
 } from "../primordials.js";
 import { utf8DecodeWithoutBOM } from "../utf8.ts";
 import { codePointArray } from "../codepoints.ts";
 
-const specialSchemes: Record<string, number | null> = {
+const specialSchemes: Safe<Record<string, number | null>> = {
+  __proto__: null,
   ftp: 21,
   file: null,
   http: 80,
@@ -125,11 +133,11 @@ function isSpecialScheme(scheme: string) {
   return specialSchemes[scheme] !== undefined;
 }
 
-function isSpecial(url: URLRecord) {
+function isSpecial(url: Safe<URLRecord>) {
   return isSpecialScheme(url.scheme);
 }
 
-function isNotSpecial(url: URLRecord) {
+function isNotSpecial(url: Safe<URLRecord>) {
   return !isSpecialScheme(url.scheme);
 }
 
@@ -182,7 +190,7 @@ function parseIPv4Number(input: string) {
 }
 
 function parseIPv4(input: string) {
-  const parts = StringPrototypeSplit(input, ".");
+  const parts: string[] = StringPrototypeSplit(input, ".");
   if (parts[parts.length - 1] === "") {
     if (parts.length > 1) {
       ArrayPrototypePop(parts);
@@ -256,7 +264,8 @@ function parseIPv6(rawInput: string) {
     compress = pieceIndex;
   }
 
-  while (pointer < input.length) {
+  const length = TypedArrayPrototypeGetByteLength(input) / 4;
+  while (pointer < length) {
     if (pieceIndex === 8) {
       return failure;
     }
@@ -423,7 +432,7 @@ function parseHostString(input: string, isOpaque = false) {
 }
 
 function endsInANumber(input: string) {
-  let i = input.length - 1;
+  let i: number = input.length - 1;
   let end = i + 1;
   if (input[i] === ".") {
     end--;
@@ -550,8 +559,8 @@ function trimTabAndNewline(url: string) {
   return RegExpPrototypeSymbolReplace(/\u0009|\u000A|\u000D/gu, url, "");
 }
 
-function shortenPath(url: URLRecord & { path: string[] }) {
-  const { path } = url;
+function shortenPath(url: Safe<URLRecord & { path: string[] }>) {
+  const path: string[] = url.path;
   if (path.length === 0) {
     return;
   }
@@ -566,16 +575,16 @@ function shortenPath(url: URLRecord & { path: string[] }) {
   ArrayPrototypePop(path);
 }
 
-function includesCredentials(url: URLRecord) {
+function includesCredentials(url: Safe<URLRecord>) {
   return url.username !== "" || url.password !== "";
 }
 
-export function cannotHaveAUsernamePasswordPort(url: URLRecord) {
+export function cannotHaveAUsernamePasswordPort(url: Safe<URLRecord>) {
   return url.host === null || url.host === "" || url.scheme === "file";
 }
 
 export function hasAnOpaquePath(
-  url: URLRecord,
+  url: Safe<URLRecord>,
 ): url is URLRecord & { path: string } {
   return typeof url.path === "string";
 }
@@ -598,7 +607,7 @@ export interface URLRecord {
 }
 
 type StateParser = (
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   cStr: string | undefined,
 ) => boolean | typeof failure;
@@ -609,7 +618,7 @@ class URLStateMachine {
   base: URLRecord | null = null;
   encodingOverride: string = "utf-8";
   stateOverride: StateParser | null = null;
-  url: URLRecord;
+  url: Safe<URLRecord>;
   failure: boolean = false;
   parseError: boolean = false;
   state: StateParser;
@@ -621,7 +630,7 @@ class URLStateMachine {
     input: string,
     base: URLRecord | null | undefined,
     encodingOverride: string | null | undefined,
-    url: URLRecord | null | undefined,
+    url: Safe<URLRecord> | null | undefined,
     stateOverride: StateParser | null | undefined,
   ) {
     if (base) this.base = base;
@@ -662,10 +671,15 @@ class URLStateMachine {
     this.arrFlag = false;
     this.passwordTokenSeenFlag = false;
 
-    this.input = codePointArray(input);
+    const inputCodePoints = codePointArray(input);
+    this.input = inputCodePoints;
 
-    for (; this.pointer <= this.input.length; ++this.pointer) {
-      const c = this.input[this.pointer]!;
+    for (
+      ;
+      this.pointer <= TypedArrayPrototypeGetByteLength(inputCodePoints) / 4;
+      ++this.pointer
+    ) {
+      const c = inputCodePoints[this.pointer | 0]!;
       const cStr = isNaN(c) ? undefined : StringFromCodePoint(c);
 
       // exec state machine
@@ -688,7 +702,7 @@ ObjectSetPrototypeOf(URLStateMachine.prototype, null);
 ObjectFreeze(URLStateMachine.prototype);
 
 export function parseSchemeStart(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   cStr: string | undefined,
 ): boolean | typeof failure {
@@ -707,7 +721,7 @@ export function parseSchemeStart(
 }
 
 function parseScheme(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   cStr: string | undefined,
 ): boolean | typeof failure {
@@ -717,35 +731,37 @@ function parseScheme(
   ) {
     sm.stringBuffer += c >= 65 && c <= 90 ? StringFromCharCode(c | 32) : cStr!;
   } else if (c === 58 /* : */) {
+    const url: Safe<URLRecord> = sm.url;
     if (sm.stateOverride) {
-      if (isSpecial(sm.url) && !isSpecialScheme(sm.stringBuffer)) {
+      if (isSpecial(url) && !isSpecialScheme(sm.stringBuffer)) {
         return false;
       }
 
-      if (!isSpecial(sm.url) && isSpecialScheme(sm.stringBuffer)) {
+      if (!isSpecial(url) && isSpecialScheme(sm.stringBuffer)) {
         return false;
       }
 
       if (
-        (includesCredentials(sm.url) || sm.url.port !== null) &&
+        (includesCredentials(url) || url.port !== null) &&
         sm.stringBuffer === "file"
       ) {
         return false;
       }
 
-      if (sm.url.scheme === "file" && sm.url.host === "") {
+      if (url.scheme === "file" && url.host === "") {
         return false;
       }
     }
-    sm.url.scheme = sm.stringBuffer;
+    url.scheme = sm.stringBuffer;
     if (sm.stateOverride) {
-      if (sm.url.port === defaultPort(sm.url.scheme)) {
-        sm.url.port = null;
+      if (url.port === defaultPort(url.scheme)) {
+        url.port = null;
       }
       return false;
     }
     sm.stringBuffer = "";
-    if (sm.url.scheme === "file") {
+    const base: Safe<URLRecord | null> = sm.base;
+    if (url.scheme === "file") {
       if (
         sm.input[sm.pointer + 1] !== 47 /* / */ ||
         sm.input[sm.pointer + 2] !== 47 /* / */
@@ -754,18 +770,18 @@ function parseScheme(
       }
       sm.state = parseFile;
     } else if (
-      isSpecial(sm.url) &&
-      sm.base !== null &&
-      sm.base.scheme === sm.url.scheme
+      isSpecial(url) &&
+      base !== null &&
+      base.scheme === url.scheme
     ) {
       sm.state = parseSpecialRelativeOrAuthority;
-    } else if (isSpecial(sm.url)) {
+    } else if (isSpecial(url)) {
       sm.state = parseSpecialAuthoritySlashes;
     } else if (sm.input[sm.pointer + 1] === 47 /* / */) {
       sm.state = parsePathOrAuthority;
       ++sm.pointer;
     } else {
-      sm.url.path = "";
+      url.path = "";
       sm.state = parseOpaquePath;
     }
   } else if (!sm.stateOverride) {
@@ -781,19 +797,21 @@ function parseScheme(
 }
 
 function parseNoScheme(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
-  if (sm.base === null || (hasAnOpaquePath(sm.base) && c !== 35 /* # */)) {
+  const base: Safe<URLRecord | null> = sm.base;
+  const url: Safe<URLRecord> = sm.url;
+  if (base === null || (hasAnOpaquePath(base) && c !== 35 /* # */)) {
     return failure;
-  } else if (hasAnOpaquePath(sm.base) && c === 35 /* # */) {
-    sm.url.scheme = sm.base.scheme;
-    sm.url.path = sm.base.path;
-    sm.url.query = sm.base.query;
-    sm.url.fragment = "";
+  } else if (hasAnOpaquePath(base) && c === 35 /* # */) {
+    url.scheme = base.scheme;
+    url.path = base.path;
+    url.query = base.query;
+    url.fragment = "";
     sm.state = parseFragment;
-  } else if (sm.base.scheme === "file") {
+  } else if (base.scheme === "file") {
     sm.state = parseFile;
     --sm.pointer;
   } else {
@@ -805,7 +823,7 @@ function parseNoScheme(
 }
 
 function parseSpecialRelativeOrAuthority(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
@@ -822,7 +840,7 @@ function parseSpecialRelativeOrAuthority(
 }
 
 function parsePathOrAuthority(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
@@ -837,32 +855,35 @@ function parsePathOrAuthority(
 }
 
 function parseRelative(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
-  sm.url.scheme = sm.base!.scheme;
+  const base: Safe<URLRecord | null> = sm.base;
+  const url: Safe<URLRecord> = sm.url;
+  if (base === null) throw new Error("invalid state");
+  url.scheme = base.scheme;
   if (c === 47 /* / */) {
     sm.state = parseRelativeSlash;
   } else if (isSpecial(sm.url) && c === 92 /* \ */) {
     sm.parseError = true;
     sm.state = parseRelativeSlash;
   } else {
-    sm.url.username = sm.base!.username;
-    sm.url.password = sm.base!.password;
-    sm.url.host = sm.base!.host;
-    sm.url.port = sm.base!.port;
-    sm.url.path = ArrayPrototypeSlice(sm.base!.path);
-    sm.url.query = sm.base!.query;
+    url.username = base.username;
+    url.password = base.password;
+    url.host = base.host;
+    url.port = base.port;
+    url.path = ArrayPrototypeSlice(base.path);
+    url.query = base.query;
     if (c === 63 /* ? */) {
-      sm.url.query = "";
+      url.query = "";
       sm.state = parseQuery;
     } else if (c === 35 /* # */) {
-      sm.url.fragment = "";
+      url.fragment = "";
       sm.state = parseFragment;
     } else if (!isNaN(c)) {
-      sm.url.query = null;
-      ArrayPrototypePop(sm.url.path as string[]);
+      url.query = null;
+      ArrayPrototypePop(url.path as string[]);
       sm.state = parsePath;
       --sm.pointer;
     }
@@ -872,10 +893,12 @@ function parseRelative(
 }
 
 function parseRelativeSlash(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
+  const base: Safe<URLRecord | null> = sm.base;
+  const url: Safe<URLRecord> = sm.url;
   if (isSpecial(sm.url) && (c === 47 /* / */ || c === 92 /* \ */)) {
     if (c === 92 /* \ */) {
       sm.parseError = true;
@@ -884,10 +907,11 @@ function parseRelativeSlash(
   } else if (c === 47 /* / */) {
     sm.state = parseAuthority;
   } else {
-    sm.url.username = sm.base!.username;
-    sm.url.password = sm.base!.password;
-    sm.url.host = sm.base!.host;
-    sm.url.port = sm.base!.port;
+    if (base === null) throw new Error("invalid state");
+    url.username = base.username;
+    url.password = base.password;
+    url.host = base.host;
+    url.port = base.port;
     sm.state = parsePath;
     --sm.pointer;
   }
@@ -896,7 +920,7 @@ function parseRelativeSlash(
 }
 
 function parseSpecialAuthoritySlashes(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
@@ -913,7 +937,7 @@ function parseSpecialAuthoritySlashes(
 }
 
 function parseSpecialAuthorityIgnoreSlashes(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
@@ -928,10 +952,11 @@ function parseSpecialAuthorityIgnoreSlashes(
 }
 
 function parseAuthority(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   cStr: string | undefined,
 ): boolean | typeof failure {
+  const url: Safe<URLRecord> = sm.url;
   if (c === 64 /* @ */) {
     sm.parseError = true;
     if (sm.atFlag) {
@@ -941,7 +966,8 @@ function parseAuthority(
 
     // careful, this is based on buffer and has its own pointer (sm.pointer != pointer) and inner chars
     const codePoints = codePointArray(sm.stringBuffer);
-    for (let i = 0; i < codePoints.length; ++i) {
+    const length = TypedArrayPrototypeGetByteLength(codePoints) / 4;
+    for (let i = 0; i < length; ++i) {
       const codePoint = codePoints[i]!;
 
       if (codePoint === 58 /* : */ && !sm.passwordTokenSeenFlag) {
@@ -953,9 +979,9 @@ function parseAuthority(
         isUserinfoPercentEncode,
       );
       if (sm.passwordTokenSeenFlag) {
-        sm.url.password += encodedCodePoints;
+        url.password += encodedCodePoints;
       } else {
-        sm.url.username += encodedCodePoints;
+        url.username += encodedCodePoints;
       }
     }
     sm.stringBuffer = "";
@@ -970,7 +996,9 @@ function parseAuthority(
       sm.parseError = true;
       return failure;
     }
-    sm.pointer -= codePointArray(sm.stringBuffer).length + 1;
+    sm.pointer -=
+      (TypedArrayPrototypeGetByteLength(codePointArray(sm.stringBuffer)) / 4) +
+      1;
     sm.stringBuffer = "";
     sm.state = parseHost;
   } else {
@@ -983,11 +1011,12 @@ function parseAuthority(
 function parseHostOrHostname(
   // is hostname
   this: boolean,
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   cStr: string | undefined,
 ): boolean | typeof failure {
-  if (sm.stateOverride && sm.url.scheme === "file") {
+  const url: Safe<URLRecord> = sm.url;
+  if (sm.stateOverride && url.scheme === "file") {
     --sm.pointer;
     sm.state = parseFileHost;
   } else if (c === 58 /* : */ && !sm.arrFlag) {
@@ -1005,7 +1034,7 @@ function parseHostOrHostname(
       return failure;
     }
 
-    sm.url.host = host;
+    url.host = host;
     sm.stringBuffer = "";
     sm.state = parsePort;
   } else if (
@@ -1022,7 +1051,7 @@ function parseHostOrHostname(
     } else if (
       sm.stateOverride &&
       sm.stringBuffer === "" &&
-      (includesCredentials(sm.url) || sm.url.port !== null)
+      (includesCredentials(sm.url) || url.port !== null)
     ) {
       sm.parseError = true;
       return false;
@@ -1033,7 +1062,7 @@ function parseHostOrHostname(
       return failure;
     }
 
-    sm.url.host = host;
+    url.host = host;
     sm.stringBuffer = "";
     sm.state = parsePathStart;
     if (sm.stateOverride) {
@@ -1060,10 +1089,11 @@ export const parseHostName: StateParser = FunctionPrototypeBind(
 );
 
 export function parsePort(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   cStr: string | undefined,
 ): boolean | typeof failure {
+  const url: Safe<URLRecord> = sm.url;
   if (isASCIIDigit(c)) {
     sm.stringBuffer += cStr;
   } else if (
@@ -1080,7 +1110,7 @@ export function parsePort(
         sm.parseError = true;
         return failure;
       }
-      sm.url.port = port === defaultPort(sm.url.scheme) ? null : port;
+      url.port = port === defaultPort(url.scheme) ? null : port;
       sm.stringBuffer = "";
     }
     if (sm.stateOverride) {
@@ -1096,7 +1126,7 @@ export function parsePort(
   return true;
 }
 
-const safe_fileOtherwiseCodePoints = new SafeSet([
+const fileOtherwiseCodePoints: Safe<Set<number>> = new SafeSet([
   47, /* / */
   92, /* \ */
   63, /* ? */
@@ -1104,46 +1134,48 @@ const safe_fileOtherwiseCodePoints = new SafeSet([
 ]);
 
 function startsWithWindowsDriveLetter(input: Uint32Array, pointer: number) {
-  const length = input.length - pointer;
+  const length = (TypedArrayPrototypeGetByteLength(input) / 4) - pointer;
   return (
     length >= 2 &&
     isWindowsDriveLetterCodePoints(input[pointer]!, input[pointer + 1]!) &&
-    (length === 2 || safe_fileOtherwiseCodePoints.has(input[pointer + 2]))
+    (length === 2 || fileOtherwiseCodePoints.has(input[pointer + 2]))
   );
 }
 
 function parseFile(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
-  sm.url.scheme = "file";
-  sm.url.host = "";
+  const url: Safe<URLRecord> = sm.url;
+  const base: Safe<URLRecord | null> = sm.base;
+  url.scheme = "file";
+  url.host = "";
 
   if (c === 47 /* / */ || c === 92 /* \ */) {
     if (c === 92 /* \ */) {
       sm.parseError = true;
     }
     sm.state = parseFileSlash;
-  } else if (sm.base !== null && sm.base.scheme === "file") {
-    sm.url.host = sm.base.host;
-    sm.url.path = ArrayPrototypeSlice(sm.base.path);
-    sm.url.query = sm.base.query;
+  } else if (base !== null && base.scheme === "file") {
+    url.host = base.host;
+    url.path = ArrayPrototypeSlice(base.path);
+    url.query = base.query;
     if (c === 63 /* ? */) {
-      sm.url.query = "";
+      url.query = "";
       sm.state = parseQuery;
     } else if (c === 35 /* # */) {
-      sm.url.fragment = "";
+      url.fragment = "";
       sm.state = parseFragment;
     } else if (!isNaN(c)) {
-      sm.url.query = null;
+      url.query = null;
       if (!startsWithWindowsDriveLetter(sm.input, sm.pointer)) {
         shortenPath(
           sm.url satisfies URLRecord as URLRecord & { path: string[] },
         );
       } else {
         sm.parseError = true;
-        sm.url.path = [];
+        url.path = [];
       }
 
       sm.state = parsePath;
@@ -1158,24 +1190,27 @@ function parseFile(
 }
 
 function parseFileSlash(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
+  const base: Safe<URLRecord | null> = sm.base;
+  const url: Safe<URLRecord> = sm.url;
+
   if (c === 47 /* / */ || c === 92 /* \ */) {
     if (c === 92 /* \ */) {
       sm.parseError = true;
     }
     sm.state = parseFileHost;
   } else {
-    if (sm.base !== null && sm.base.scheme === "file") {
+    if (base !== null && base.scheme === "file") {
       if (
         !startsWithWindowsDriveLetter(sm.input, sm.pointer) &&
-        isNormalizedWindowsDriveLetterString(sm.base.path[0]!)
+        isNormalizedWindowsDriveLetterString(base.path[0]!)
       ) {
-        ArrayPrototypePush(sm.url.path as string[], sm.base.path[0]!);
+        ArrayPrototypePush(url.path as string[], base.path[0]!);
       }
-      sm.url.host = sm.base.host;
+      url.host = base.host;
     }
     sm.state = parsePath;
     --sm.pointer;
@@ -1185,10 +1220,11 @@ function parseFileSlash(
 }
 
 function parseFileHost(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   cStr: string | undefined,
 ): boolean | typeof failure {
+  const url: Safe<URLRecord> = sm.url;
   if (
     isNaN(c) ||
     c === 47 /* / */ ||
@@ -1201,7 +1237,7 @@ function parseFileHost(
       sm.parseError = true;
       sm.state = parsePath;
     } else if (sm.stringBuffer === "") {
-      sm.url.host = "";
+      url.host = "";
       if (sm.stateOverride) {
         return false;
       }
@@ -1214,7 +1250,7 @@ function parseFileHost(
       if (host === "localhost") {
         host = "";
       }
-      sm.url.host = host;
+      url.host = host;
 
       if (sm.stateOverride) {
         return false;
@@ -1231,10 +1267,12 @@ function parseFileHost(
 }
 
 export function parsePathStart(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
+  const url: Safe<URLRecord> = sm.url;
+
   if (isSpecial(sm.url)) {
     if (c === 92 /* \ */) {
       sm.parseError = true;
@@ -1245,28 +1283,30 @@ export function parsePathStart(
       --sm.pointer;
     }
   } else if (!sm.stateOverride && c === 63 /* ? */) {
-    sm.url.query = "";
+    url.query = "";
     sm.state = parseQuery;
   } else if (!sm.stateOverride && c === 35 /* # */) {
-    sm.url.fragment = "";
+    url.fragment = "";
     sm.state = parseFragment;
   } else if (c !== undefined) {
     sm.state = parsePath;
     if (c !== 47 /* / */) {
       --sm.pointer;
     }
-  } else if (sm.stateOverride && sm.url.host === null) {
-    ArrayPrototypePush(sm.url.path as string[], "");
+  } else if (sm.stateOverride && url.host === null) {
+    ArrayPrototypePush(url.path as string[], "");
   }
 
   return true;
 }
 
 function parsePath(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
+  const url: Safe<URLRecord> = sm.url;
+
   if (
     isNaN(c) ||
     c === 47 /* / */ ||
@@ -1280,31 +1320,32 @@ function parsePath(
     if (isDoubleDot(sm.stringBuffer)) {
       shortenPath(sm.url as URLRecord & { path: string[] });
       if (c !== 47 /* / */ && !(isSpecial(sm.url) && c === 92 /* \ */)) {
-        ArrayPrototypePush(sm.url.path as string[], "");
+        ArrayPrototypePush(url.path as string[], "");
       }
     } else if (
       isSingleDot(sm.stringBuffer) &&
       c !== 47 /* / */ &&
       !(isSpecial(sm.url) && c === 92 /* \ */)
     ) {
-      ArrayPrototypePush(sm.url.path as string[], "");
+      ArrayPrototypePush(url.path as string[], "");
     } else if (!isSingleDot(sm.stringBuffer)) {
       if (
-        sm.url.scheme === "file" &&
-        sm.url.path.length === 0 &&
+        url.scheme === "file" &&
+        // deno-lint-ignore no-property-access/no-property-access
+        url.path.length === 0 &&
         isWindowsDriveLetterString(sm.stringBuffer)
       ) {
         sm.stringBuffer = `${sm.stringBuffer[0]}:`;
       }
-      ArrayPrototypePush(sm.url.path as string[], sm.stringBuffer);
+      ArrayPrototypePush(url.path as string[], sm.stringBuffer);
     }
     sm.stringBuffer = "";
     if (c === 63 /* ? */) {
-      sm.url.query = "";
+      url.query = "";
       sm.state = parseQuery;
     }
     if (c === 35 /* # */) {
-      sm.url.fragment = "";
+      url.fragment = "";
       sm.state = parseFragment;
     }
   } else {
@@ -1325,22 +1366,24 @@ function parsePath(
 }
 
 function parseOpaquePath(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
+  const url: Safe<URLRecord> = sm.url;
+
   if (c === 63 /* ? */) {
-    sm.url.query = "";
+    url.query = "";
     sm.state = parseQuery;
   } else if (c === 35 /* # */) {
-    sm.url.fragment = "";
+    url.fragment = "";
     sm.state = parseFragment;
   } else if (c === 32 /*   */) {
     const remaining = sm.input[sm.pointer + 1];
     if (remaining === 63 /* ? */ || remaining === 35 /* # */) {
-      sm.url.path += "%20";
+      url.path += "%20";
     } else {
-      sm.url.path += " ";
+      url.path += " ";
     }
   } else {
     // TODO: Add: not a URL code point
@@ -1357,7 +1400,7 @@ function parseOpaquePath(
     }
 
     if (!isNaN(c)) {
-      sm.url.path += utf8PercentEncodeCodePoint(c, isC0ControlPercentEncode);
+      url.path += utf8PercentEncodeCodePoint(c, isC0ControlPercentEncode);
     }
   }
 
@@ -1365,11 +1408,13 @@ function parseOpaquePath(
 }
 
 export function parseQuery(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   cStr: string | undefined,
 ): boolean | typeof failure {
-  if (!isSpecial(sm.url) || sm.url.scheme === "ws" || sm.url.scheme === "wss") {
+  const url: Safe<URLRecord> = sm.url;
+
+  if (!isSpecial(url) || url.scheme === "ws" || url.scheme === "wss") {
     sm.encodingOverride = "utf-8";
   }
 
@@ -1377,7 +1422,7 @@ export function parseQuery(
     const queryPercentEncodePredicate = isSpecial(sm.url)
       ? isSpecialQueryPercentEncode
       : isQueryPercentEncode;
-    sm.url.query += utf8PercentEncodeString(
+    url.query += utf8PercentEncodeString(
       sm.stringBuffer,
       queryPercentEncodePredicate,
     );
@@ -1385,7 +1430,7 @@ export function parseQuery(
     sm.stringBuffer = "";
 
     if (c === 35 /* # */) {
-      sm.url.fragment = "";
+      url.fragment = "";
       sm.state = parseFragment;
     }
   } else if (!isNaN(c)) {
@@ -1406,10 +1451,12 @@ export function parseQuery(
 }
 
 export function parseFragment(
-  sm: URLStateMachine,
+  sm: Safe<URLStateMachine>,
   c: number,
   _cStr: string | undefined,
 ): boolean | typeof failure {
+  const url: Safe<URLRecord> = sm.url;
+
   if (!isNaN(c)) {
     // TODO: If c is not a URL code point and not "%", parse error.
     if (
@@ -1420,13 +1467,13 @@ export function parseFragment(
       sm.parseError = true;
     }
 
-    sm.url.fragment += utf8PercentEncodeCodePoint(c, isFragmentPercentEncode);
+    url.fragment += utf8PercentEncodeCodePoint(c, isFragmentPercentEncode);
   }
 
   return true;
 }
 
-export function serializeURL(url: URLRecord, excludeFragment?: boolean) {
+export function serializeURL(url: Safe<URLRecord>, excludeFragment?: boolean) {
   let output = `${url.scheme}:`;
   if (url.host !== null) {
     output += "//";
@@ -1449,6 +1496,7 @@ export function serializeURL(url: URLRecord, excludeFragment?: boolean) {
   if (
     url.host === null &&
     !hasAnOpaquePath(url) &&
+    // deno-lint-ignore no-property-access/no-property-access
     url.path.length > 1 &&
     url.path[0] === ""
   ) {
@@ -1467,11 +1515,13 @@ export function serializeURL(url: URLRecord, excludeFragment?: boolean) {
   return output;
 }
 
-function serializeOrigin(tuple: {
-  scheme: string;
-  host: string;
-  port: number | null;
-}) {
+function serializeOrigin(
+  tuple: Safe<{
+    scheme: string;
+    host: string;
+    port: number | null;
+  }>,
+) {
   let result = `${tuple.scheme}://`;
   result += serializeHost(tuple.host);
 
@@ -1482,7 +1532,7 @@ function serializeOrigin(tuple: {
   return result;
 }
 
-export function serializePath(url: URLRecord) {
+export function serializePath(url: Safe<URLRecord>) {
   if (hasAnOpaquePath(url)) {
     return url.path;
   }
@@ -1494,11 +1544,11 @@ export function serializePath(url: URLRecord) {
   return output;
 }
 
-export function serializeURLOrigin(url: URLRecord) {
+export function serializeURLOrigin(url: Safe<URLRecord>) {
   // https://url.spec.whatwg.org/#concept-url-origin
   switch (url.scheme) {
     case "blob": {
-      const pathURL = basicURLParse(serializePath(url));
+      const pathURL: Safe<URLRecord | null> = basicURLParse(serializePath(url));
       if (pathURL === null) {
         return "null";
       }
@@ -1535,14 +1585,14 @@ export function serializeURLOrigin(url: URLRecord) {
 const empty = ObjectFreeze(ObjectCreate(null));
 export function basicURLParse(
   input: string,
-  options: {
+  options: Safe<{
     baseURL?: URLRecord | null | undefined;
     encodingOverride?: string | null | undefined;
     url?: URLRecord;
     stateOverride?: StateParser | null | undefined;
-  } = empty,
+  }> = empty,
 ) {
-  const usm = new URLStateMachine(
+  const usm: Safe<URLStateMachine> = new URLStateMachine(
     input,
     options.baseURL,
     options.encodingOverride,
@@ -1556,10 +1606,10 @@ export function basicURLParse(
   return usm.url;
 }
 
-export function setTheUsername(url: URLRecord, username: string) {
+export function setTheUsername(url: Safe<URLRecord>, username: string) {
   url.username = utf8PercentEncodeString(username, isUserinfoPercentEncode);
 }
 
-export function setThePassword(url: URLRecord, password: string) {
+export function setThePassword(url: Safe<URLRecord>, password: string) {
   url.password = utf8PercentEncodeString(password, isUserinfoPercentEncode);
 }

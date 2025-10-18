@@ -1,17 +1,24 @@
 {
-  "version": "4",
+  "version": "5",
   "specifiers": {
     "npm:@types/node@*": "22.12.0",
     "npm:@unicode/unicode-15.0.0@*": "1.6.5",
     "npm:@unicode/unicode-16.0.0@*": "1.6.5",
+    "npm:@unicode/unicode-17.0.0@*": "1.6.12",
     "npm:fastestsmallesttextencoderdecoder@1.0.22": "1.0.22",
+    "npm:is-reference@3": "3.0.3",
     "npm:object-inspect@1": "1.13.4",
+    "npm:periscopic@4": "4.0.2",
     "npm:picocolors@^1.1.1": "1.1.1",
     "npm:regenerate@1.4.2": "1.4.2",
     "npm:string-width@^7.2.0": "7.2.0",
-    "npm:whatwg-url@14.2.0": "14.2.0"
+    "npm:whatwg-url@14.2.0": "14.2.0",
+    "npm:zimmerframe@1": "1.1.2"
   },
   "npm": {
+    "@types/estree@1.0.6": {
+      "integrity": "sha512-AYnb1nQyY49te+VRAVgmzfcgjYS91mY5P0TKUDCLEM+gNnA+3T6rWITXRLYCpahpqSQbN5cE+gHpnPyXjHWxcw=="
+    },
     "@types/node@22.12.0": {
       "integrity": "sha512-Fll2FZ1riMjNmlmJOdAyY5pUbkftXslB5DgEzlIuNaiWhXd00FhWxVC/r4yV/4wBb9JfImTu+jiSvXTkJ7F/gA==",
       "dependencies": [
@@ -23,6 +30,9 @@
     },
     "@unicode/unicode-16.0.0@1.6.5": {
       "integrity": "sha512-r+ONMCgl+K2UWPmEbjN+aqjiLkjh1Zattq8OKYCbFoslwWFc+ysAGQR4h3YOtNvVtuiZSd4O1brRE7cp0wn6Aw=="
+    },
+    "@unicode/unicode-17.0.0@1.6.12": {
+      "integrity": "sha512-4IyVjMPIjHThNGZ3PSv7CTtkHrTF8YlkA2HuNAMrqnjIiN2ghCtnwUwEqjfpUT+dfBWjiZJGkiInlqF/3fPiZQ=="
     },
     "ansi-regex@6.1.0": {
       "integrity": "sha512-7HSX4QQb4CspciLpVFwyRe79O3xsIZDDLER21kERQ71oaPodF8jL725AgJMFAYbooIqolJoRLuM81SpeUkpkvA=="
@@ -36,8 +46,22 @@
     "get-east-asian-width@1.3.0": {
       "integrity": "sha512-vpeMIQKxczTD/0s2CdEWHcb0eeJe6TFjxb+J5xgX7hScxqrGuyjmv4c1D4A/gelKfyox0gJJwIHF+fLjeaM8kQ=="
     },
+    "is-reference@3.0.3": {
+      "integrity": "sha512-ixkJoqQvAP88E6wLydLGGqCJsrFUnqoH6HnaczB8XmDH1oaWU+xxdptvikTgaEhtZ53Ky6YXiBuUI2WXLMCwjw==",
+      "dependencies": [
+        "@types/estree"
+      ]
+    },
     "object-inspect@1.13.4": {
       "integrity": "sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew=="
+    },
+    "periscopic@4.0.2": {
+      "integrity": "sha512-sqpQDUy8vgB7ycLkendSKS6HnVz1Rneoc3Rc+ZBUCe2pbqlVuCC5vF52l0NJ1aiMg/r1qfYF9/myz8CZeI2rjA==",
+      "dependencies": [
+        "@types/estree",
+        "is-reference",
+        "zimmerframe"
+      ]
     },
     "picocolors@1.1.1": {
       "integrity": "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="
@@ -80,6 +104,9 @@
         "tr46",
         "webidl-conversions"
       ]
+    },
+    "zimmerframe@1.1.2": {
+      "integrity": "sha512-rAbqEGa8ovJy4pyBxZM70hg4pE6gDgaQ0Sl9M3enG3I0d6H4XSAM3GeNGLKnsBpuijUow064sf7ww1nutC5/3w=="
     }
   },
   "remote": {

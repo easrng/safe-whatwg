@@ -7,7 +7,7 @@
 // 1. Go to https://github.com/web-platform-tests/wpt/tree/master/url
 // 2. Press "y" on your keyboard to get a permalink
 // 3. Copy the commit hash
-const commitHash = "0557f15b1edaed64ca89d864a8be9ffd82c888ec";
+const commitHash = "00fbd14a9bfed82770a8cafca52c69dec0902148";
 
 const prefix =
   `https://cdn.jsdelivr.net/gh/web-platform-tests/wpt@${commitHash}/`;

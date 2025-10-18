@@ -1,5 +1,6 @@
 // deno-lint-ignore-file prefer-primordials
 import { StringFromCharCodes } from "../from-char-codes.ts";
+import { TypedArrayPrototypeGetByteLength } from "../primordial-utils.ts";
 import { ReflectApply, String, StringFromCharCode } from "../primordials.js";
 
 Deno.bench("1", () => {
@@ -94,7 +95,7 @@ Deno.bench("32", () => {
 
 const arr = new Uint8Array(1000).fill(97);
 Deno.bench("StringFromCharCodes", () => {
-  const str = StringFromCharCodes(arr);
+  const str = StringFromCharCodes(arr, TypedArrayPrototypeGetByteLength(arr));
   if (str.length !== 1000) throw "err";
 });
 Deno.bench("Apply", () => {

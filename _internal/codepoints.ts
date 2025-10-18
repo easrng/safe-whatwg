@@ -2,6 +2,7 @@ import {
   ArrayBuffer,
   StringPrototypeCodePointAt,
   Uint32Array,
+  undefined,
 } from "./primordials.js";
 
 export const codePointStrings = (str: string): string[] => {

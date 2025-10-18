@@ -1,6 +1,7 @@
 // https://github.com/jsdom/whatwg-url/blob/414f17a3459b0872baee7a2b77e23953b8a5ccd9/lib/percent-encoding.js
 
 import {
+  type Safe,
   SafeSet,
   SafeStringIterator,
   TypedArrayPrototypeGetBuffer,
@@ -19,7 +20,7 @@ import { isASCIIHex } from "./infra.ts";
 
 // https://url.spec.whatwg.org/#percent-encode
 function percentEncode(c: number) {
-  let hex = StringPrototypeToUpperCase(NumberPrototypeToString(c, 16));
+  let hex: string = StringPrototypeToUpperCase(NumberPrototypeToString(c, 16));
   if (hex.length === 1) {
     hex = `0${hex}`;
   }
@@ -66,27 +67,29 @@ function isC0ControlPercentEncode(c: number) {
 }
 
 // https://url.spec.whatwg.org/#fragment-percent-encode-set
-const extraFragmentPercentEncodeSet = /* @__PURE__ */ (() =>
-  new SafeSet([
-    32, /*   */
-    34, /* " */
-    60, /* < */
-    62, /* > */
-    96, /* ` */
-  ]))();
+const extraFragmentPercentEncodeSet: Safe<Set<number>> =
+  /* @__PURE__ */ (() =>
+    new SafeSet([
+      32, /*   */
+      34, /* " */
+      60, /* < */
+      62, /* > */
+      96, /* ` */
+    ]))();
 function isFragmentPercentEncode(c: number) {
   return isC0ControlPercentEncode(c) || extraFragmentPercentEncodeSet.has(c);
 }
 
 // https://url.spec.whatwg.org/#query-percent-encode-set
-const extraQueryPercentEncodeSet = /* @__PURE__ */ (() =>
-  new SafeSet([
-    32, /*   */
-    34, /* " */
-    35, /* # */
-    60, /* < */
-    62, /* > */
-  ]))();
+const extraQueryPercentEncodeSet: Safe<Set<number>> =
+  /* @__PURE__ */ (() =>
+    new SafeSet([
+      32, /*   */
+      34, /* " */
+      35, /* # */
+      60, /* < */
+      62, /* > */
+    ]))();
 function isQueryPercentEncode(c: number) {
   return isC0ControlPercentEncode(c) || extraQueryPercentEncodeSet.has(c);
 }
@@ -97,57 +100,61 @@ function isSpecialQueryPercentEncode(c: number) {
 }
 
 // https://url.spec.whatwg.org/#path-percent-encode-set
-const extraPathPercentEncodeSet = /* @__PURE__ */ (() =>
-  new SafeSet([
-    63, /* ? */
-    96, /* ` */
-    123, /* { */
-    125, /* } */
-    94, /* ^ */
-  ]))();
+const extraPathPercentEncodeSet: Safe<Set<number>> =
+  /* @__PURE__ */ (() =>
+    new SafeSet([
+      63, /* ? */
+      96, /* ` */
+      123, /* { */
+      125, /* } */
+      94, /* ^ */
+    ]))();
 function isPathPercentEncode(c: number) {
   return isQueryPercentEncode(c) || extraPathPercentEncodeSet.has(c);
 }
 
 // https://url.spec.whatwg.org/#userinfo-percent-encode-set
-const extraUserinfoPercentEncodeSet = /* @__PURE__ */ (() =>
-  new SafeSet([
-    47, /* / */
-    58, /* : */
-    59, /* ; */
-    61, /* = */
-    64, /* @ */
-    91, /* [ */
-    92, /* \ */
-    93, /* ] */
-    124, /* | */
-  ]))();
+const extraUserinfoPercentEncodeSet: Safe<Set<number>> =
+  /* @__PURE__ */ (() =>
+    new SafeSet([
+      47, /* / */
+      58, /* : */
+      59, /* ; */
+      61, /* = */
+      64, /* @ */
+      91, /* [ */
+      92, /* \ */
+      93, /* ] */
+      124, /* | */
+    ]))();
 function isUserinfoPercentEncode(c: number) {
   return isPathPercentEncode(c) || extraUserinfoPercentEncodeSet.has(c);
 }
 
 // https://url.spec.whatwg.org/#component-percent-encode-set
-const extraComponentPercentEncodeSet = /* @__PURE__ */ (() =>
-  new SafeSet([
-    36, /* $ */
-    37, /* % */
-    38, /* & */
-    43, /* + */
-    44, /* , */
-  ]))();
+const extraComponentPercentEncodeSet: Safe<Set<number>> =
+  /* @__PURE__ */ (() =>
+    new SafeSet([
+      36, /* $ */
+      37, /* % */
+      38, /* & */
+      43, /* + */
+      44, /* , */
+    ]))();
 function isComponentPercentEncode(c: number) {
   return isUserinfoPercentEncode(c) || extraComponentPercentEncodeSet.has(c);
 }
 
 // https://url.spec.whatwg.org/#application-x-www-form-urlencoded-percent-encode-set
-const extraURLEncodedPercentEncodeSet = /* @__PURE__ */ (() =>
-  new SafeSet([
-    33, /* ! */
-    39, /* ' */
-    40, /* ( */
-    41, /* ) */
-    126, /* ~ */
-  ]))();
+const extraURLEncodedPercentEncodeSet: Safe<Set<number>> =
+  /* @__PURE__ */ (() =>
+    new SafeSet([
+      33, /* ! */
+      39, /* ' */
+      40, /* ( */
+      41, /* ) */
+      126, /* ~ */
+    ]))();
 function isURLEncodedPercentEncode(c: number) {
   return isComponentPercentEncode(c) || extraURLEncodedPercentEncodeSet.has(c);
 }
@@ -163,7 +170,7 @@ function utf8PercentEncodeCodePointInternal(
 ) {
   const bytes = utf8Encode(codePoint);
   let output = "";
-  for (let i = 0; i < bytes.length; i++) {
+  for (let i = 0; i < TypedArrayPrototypeGetByteLength(bytes); i++) {
     const byte = bytes[i];
     // Our percentEncodePredicate operates on bytes, not code points, so this is slightly different from the spec.
     if (!percentEncodePredicate(byte)) {

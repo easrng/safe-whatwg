@@ -32,6 +32,7 @@ import {
   SymbolToStringTag,
   Uint8Array,
   uncurryThis,
+  undefined,
   WeakMap,
   WeakSet,
 } from "./primordials.js";
@@ -63,17 +64,20 @@ const createSafeIterator = <F>(
       return this;
     }
   }
-  ObjectSetPrototypeOf(SafeIterator.prototype, null);
-  ObjectFreeze(SafeIterator.prototype);
+  const SafeIterator_: Safe<typeof SafeIterator> = SafeIterator;
+  ObjectSetPrototypeOf(SafeIterator_.prototype, null);
+  ObjectFreeze(SafeIterator_.prototype);
   ObjectFreeze(SafeIterator);
   return SafeIterator;
 };
+
+const ArrayPrototype_: Safe<typeof ArrayPrototype> = ArrayPrototype;
 
 export const ArrayIteratorPrototype =
   /* @__PURE__ */ (() =>
     ReflectGetPrototypeOf(
       // eslint-disable-next-line no-restricted-syntax
-      ArrayPrototype[SymbolIterator](),
+      ArrayPrototype_[SymbolIterator](),
     )! as {
       [SymbolToStringTag]: "Array Iterator";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -109,27 +113,32 @@ export const StringIteratorPrototype =
       next: Iterator<any, any>["next"];
     })();
 
-export const TypedArrayPrototype =
+export const TypedArrayPrototype: Safe<any> =
   // @ts-expect-error i'll type this later
+  // deno-lint-ignore no-property-access/no-property-access
   /* @__PURE__ */ (() => ReflectGetPrototypeOf(Uint8Array)!.prototype)();
 export const TypedArrayPrototypeGetSymbolToStringTag =
   /* @__PURE__ */ (() =>
     uncurryThis(
+      // deno-lint-ignore no-property-access/no-property-access
       ReflectGetOwnPropertyDescriptor(TypedArrayPrototype, SymbolToStringTag)!
         .get!,
     ))();
 export const TypedArrayPrototypeGetBuffer = /* @__PURE__ */ (() =>
   uncurryThis(
+    // deno-lint-ignore no-property-access/no-property-access
     ReflectGetOwnPropertyDescriptor(TypedArrayPrototype, "buffer")!.get!,
   ))();
 export const TypedArrayPrototypeGetByteLength =
   /* @__PURE__ */ (() =>
     uncurryThis(
+      // deno-lint-ignore no-property-access/no-property-access
       ReflectGetOwnPropertyDescriptor(TypedArrayPrototype, "byteLength")!.get!,
     ))();
 export const TypedArrayPrototypeGetByteOffset =
   /* @__PURE__ */ (() =>
     uncurryThis(
+      // deno-lint-ignore no-property-access/no-property-access
       ReflectGetOwnPropertyDescriptor(TypedArrayPrototype, "byteOffset")!.get!,
     ))();
 export const TypedArrayPrototypeSubarray = /* @__PURE__ */ (() =>
@@ -146,7 +155,7 @@ export const TypedArrayPrototypeSet = /* @__PURE__ */ (() =>
   ))();
 export const ArrayPrototypeMap = /* @__PURE__ */ (() =>
   uncurryThis(
-    ArrayPrototype.map,
+    ArrayPrototype_.map,
   ) as <T, U>(
     self: T[],
     callbackfn: (value: T, index: number, array: T[]) => U,
@@ -154,18 +163,22 @@ export const ArrayPrototypeMap = /* @__PURE__ */ (() =>
 
 const ArrayIteratorPrototypeNext = /* @__PURE__ */ (() =>
   uncurryThis(
+    // deno-lint-ignore no-property-access/no-property-access
     ArrayIteratorPrototype.next,
   ))();
 const SetIteratorPrototypeNext = /* @__PURE__ */ (() =>
   uncurryThis(
+    // deno-lint-ignore no-property-access/no-property-access
     SetIteratorPrototype.next,
   ))();
 const MapIteratorPrototypeNext = /* @__PURE__ */ (() =>
   uncurryThis(
+    // deno-lint-ignore no-property-access/no-property-access
     MapIteratorPrototype.next,
   ))();
 const StringIteratorPrototypeNext = /* @__PURE__ */ (() =>
   uncurryThis(
+    // deno-lint-ignore no-property-access/no-property-access
     StringIteratorPrototype.next,
   ))();
 
@@ -203,8 +216,8 @@ const copyProps = (src: object, dest: object) => {
 };
 
 export const makeSafe = <T extends Constructor>(
-  unsafe: Constructor,
-  safe: T,
+  unsafe: Safe<Constructor>,
+  safe: Safe<T>,
 ): T => {
   // deno-lint-ignore prefer-primordials
   if (SymbolIterator in unsafe.prototype) {
@@ -213,14 +226,18 @@ export const makeSafe = <T extends Constructor>(
 
     ArrayPrototypeForEach(ReflectOwnKeys(unsafe.prototype), (key) => {
       if (!ReflectGetOwnPropertyDescriptor(safe.prototype, key)) {
-        const desc = ReflectGetOwnPropertyDescriptor(unsafe.prototype, key)!;
+        const desc: Safe<PropertyDescriptor> = ReflectGetOwnPropertyDescriptor(
+          unsafe.prototype,
+          key,
+        )!;
         if (
           typeof desc.value === "function" &&
+          // deno-lint-ignore no-property-access/no-property-access
           desc.value.length === 0 &&
-          // deno-lint-ignore prefer-primordials
           SymbolIterator in (FunctionPrototypeCall(desc.value, dummy) ?? {})
         ) {
           const createIterator = uncurryThis(desc.value);
+          // deno-lint-ignore no-property-access/no-property-access
           next ??= uncurryThis(createIterator(dummy).next);
           const SafeIterator = createSafeIterator(createIterator, next);
           desc.value = function (this: Iterable<unknown>) {
@@ -364,7 +381,7 @@ export const SafePromiseAll = <T>(
   // Wrapping on a new Promise is necessary to not expose the SafePromise
   // prototype to user-land.
   new Promise((a, b) =>
-    // deno-lint-ignore prefer-primordials
+    // deno-lint-ignore no-property-access/no-property-access
     SafePromise.all<T>(arrayToSafePromiseIterable(values)).then(a, b)
   );
 
@@ -428,7 +445,7 @@ export const SafePromisePrototypeFinally = (
   // Wrapping on a new Promise is necessary to not expose the SafePromise
   // prototype to user-land.
   new Promise((a, b) =>
-    // deno-lint-ignore prefer-primordials
+    // deno-lint-ignore no-property-access/no-property-access
     new SafePromise((a, b) => PromisePrototypeThen(thisPromise, a, b))
       .finally(onFinally)
       .then(a, b)
@@ -495,3 +512,4 @@ export function isMap(value: unknown) {
     return false;
   }
 }
+export type Safe<T> = T;

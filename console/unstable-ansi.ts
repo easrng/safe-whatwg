@@ -1,5 +1,6 @@
 import {
   ArrayPrototypeMap,
+  type Safe,
   SafeArrayIterator,
   SafeRegExp,
 } from "../_internal/primordial-utils.ts";
@@ -11,8 +12,9 @@ import {
   String,
   StringPrototypePadEnd,
   StringPrototypeRepeat,
+  undefined,
 } from "../_internal/primordials.js";
-import type { Printer } from "./unstable-create.ts";
+import type { Part, Printer } from "./unstable-create.ts";
 import inspect from "npm:object-inspect@1";
 import pc from "npm:picocolors@^1.1.1";
 import stringWidth from "npm:string-width@^7.2.0";
@@ -27,17 +29,18 @@ const {
 } = pc;
 
 function table(arr: unknown[][]) {
+  // deno-lint-ignore no-property-access/no-property-access
   const cols = arr[0]!.length;
   const widths = ArrayFrom({ length: cols }, () => 0);
   const rows: string[][] = [];
   for (const rawRow of new SafeArrayIterator(arr)) {
     const row: string[] = [];
     for (let col = 0; col < cols; col++) {
-      const str = typeof rawRow[col] === "string"
-        ? rawRow[col]
-        : inspect(rawRow[col]);
+      const str = typeof rawRow[col | 0] === "string"
+        ? rawRow[col | 0]
+        : inspect(rawRow[col | 0]);
       const width = stringWidth(str);
-      if (width > widths[col]) widths[col] = width;
+      if (width > widths[col | 0]) widths[col | 0] = width;
       ArrayPrototypePush(row, str);
     }
     ArrayPrototypePush(rows, row);
@@ -56,7 +59,7 @@ function table(arr: unknown[][]) {
             (cell, col) =>
               (col === 0 || i === 0 ? bold : String)(StringPrototypePadEnd(
                 cell,
-                widths[col],
+                widths[col | 0],
                 " ",
               )),
           ),
@@ -116,7 +119,7 @@ export const createAnsiPrinter = (
                 ArrayPrototypeJoin(
                   ArrayPrototypeMap(
                     data,
-                    (item) =>
+                    (item: Safe<string | Part>) =>
                       typeof item === "string"
                         ? item
                         : `${

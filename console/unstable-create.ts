@@ -25,15 +25,18 @@ import {
   String,
   StringPrototypeSlice,
   SymbolToStringTag,
+  undefined,
 } from "../_internal/primordials.js";
 import {
   ArrayPrototypeMap,
   isMap,
   isSet,
+  type Safe,
   SafeArrayIterator,
   SafeRegExp,
   SafeSetIterator,
 } from "../_internal/primordial-utils.ts";
+import { NumberNaN } from "../_internal/primordials.js";
 
 export type Printer = (
   ...args:
@@ -69,18 +72,18 @@ type Logger = (
 ) => void;
 
 const stripMe = new SafeRegExp(/^(?:.*Error.*\n)?.+\n/);
-type Part = {
+export type Part = {
   css: string | undefined;
   value: unknown;
   type: "string" | "object" | "table";
 };
 
 function format(args: unknown[]): (string | Part)[] {
-  const first = args[0];
   let a = 0;
   const parts: (Part | string)[] = [];
 
-  if (typeof first == "string" && args.length > 1) {
+  if (typeof args[0] == "string" && args.length > 1) {
+    const first: string = args[0];
     a++;
     // Index of the first not-yet-appended character. Use this so we only
     // have to append to `string` when a substitution occurs / at the end.
@@ -105,7 +108,7 @@ function format(args: unknown[]): (string | Part)[] {
                 formattedArg = {
                   css,
                   type: "object",
-                  value: NaN,
+                  value: NumberNaN,
                 };
               } else {
                 formattedArg = {
@@ -123,7 +126,7 @@ function format(args: unknown[]): (string | Part)[] {
                 formattedArg = {
                   css,
                   type: "object",
-                  value: NaN,
+                  value: NumberNaN,
                 };
               } else {
                 formattedArg = {
@@ -189,10 +192,10 @@ function format(args: unknown[]): (string | Part)[] {
         " ",
       );
     }
-    if (typeof args[a] == "string") {
+    if (typeof args[a | 0] == "string") {
       ArrayPrototypePush(
         parts,
-        args[a],
+        args[a | 0],
       );
     } else {
       // Use default maximum depth for null or undefined arguments.
@@ -201,7 +204,7 @@ function format(args: unknown[]): (string | Part)[] {
         {
           css: undefined,
           type: "object",
-          value: args[a],
+          value: args[a | 0],
         },
       );
     }
@@ -427,8 +430,8 @@ export interface Console {
 
 export function createConsole(printer: Printer): Console {
   const groupStack: unknown[][] = [];
-  const countMap: Record<string, number> = { __proto__: null as never };
-  const timerTable: Record<string, number> = { __proto__: null as never };
+  const countMap: Safe<Record<string, number>> = { __proto__: null as never };
+  const timerTable: Safe<Record<string, number>> = { __proto__: null as never };
   const logger: Logger = (...args) => {
     printer(args[0], format(args[1]));
   };
@@ -492,7 +495,7 @@ export function createConsole(printer: Printer): Console {
           resultData = { __proto__: null };
 
           MapPrototypeForEach(data, (v, k) => {
-            resultData[idx] = { Key: k, Values: v };
+            resultData[idx | 0] = { Key: k, Values: v };
             idx++;
           });
         } else {
@@ -500,7 +503,7 @@ export function createConsole(printer: Printer): Console {
           resultData = data as any;
         }
 
-        const keys = ObjectKeys(resultData);
+        const keys: string[] = ObjectKeys(resultData);
         const numRows = keys.length;
 
         const objectValues: Record<string | number, unknown[]> = properties
@@ -516,6 +519,7 @@ export function createConsole(printer: Printer): Console {
 
         let hasPrimitives = false;
         ArrayPrototypeForEach(keys, (k, idx) => {
+          // deno-lint-ignore no-property-access/no-property-access
           const value = resultData[k];
           const primitive = value === null ||
             (typeof value !== "function" && typeof value !== "object");
@@ -524,14 +528,15 @@ export function createConsole(printer: Printer): Console {
             ArrayPrototypePush(values, value);
           } else {
             const valueObj = value || {};
-            const keys = properties || ObjectKeys(valueObj);
+            const keys: string[] = properties || ObjectKeys(valueObj);
             for (let i = 0; i < keys.length; ++i) {
               const k = keys[i];
               if (!primitive && ReflectHas(valueObj, k)) {
                 if (!(ReflectHas(objectValues, k))) {
+                  // deno-lint-ignore no-property-access/no-property-access
                   objectValues[k] = ArrayPrototypeFill(new Array(numRows), "");
                 }
-                // deno-lint-ignore no-explicit-any
+                // deno-lint-ignore no-property-access/no-property-access, no-explicit-any
                 objectValues[k][idx] = (valueObj as any)[k];
               }
             }
@@ -567,7 +572,7 @@ export function createConsole(printer: Printer): Console {
               ArrayFrom(
                 ObjectAssign({ __proto__: null }, { length: numRows }),
                 (_, row) =>
-                  ArrayPrototypeMap(header, (_, col) => body[col][row]),
+                  ArrayPrototypeMap(header, (_, col) => body[col | 0][row | 0]),
               ),
             ),
           ],
@@ -576,6 +581,7 @@ export function createConsole(printer: Printer): Console {
       trace(...data: unknown[]) {
         logger("trace", [
           ...new SafeArrayIterator(data),
+          // deno-lint-ignore no-property-access/no-property-access
           "\n" + RegExpPrototypeSymbolReplace(stripMe, new Error().stack!, ""),
         ]);
       },
