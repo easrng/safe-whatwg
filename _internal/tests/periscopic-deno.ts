@@ -8,6 +8,9 @@ type Identifier = Deno.lint.Identifier;
  * @returns {boolean}
  */
 export function is_reference(node: Node, parent: Node): boolean {
+  if (parent.type === "ImportAttribute") {
+    return false;
+  }
   if (node.type === "MemberExpression") {
     return !node.computed && is_reference(node.object, node);
   }
@@ -55,7 +58,11 @@ export function is_reference(node: Node, parent: Node): boolean {
 }
 
 /** @param {Node} expression */
-export function analyze(expression: Node) {
+export function analyze(expression: Node): {
+  map: WeakMap<Deno.lint.Node, Scope>;
+  scope: Scope;
+  globals: Map<string, Deno.lint.Node>;
+} {
   /** @typedef {Node} Node */
 
   /** @type {WeakMap<Node, Scope>} */
@@ -243,7 +250,7 @@ export class Scope {
     node:
       | Deno.lint.VariableDeclaration
       | Deno.lint.ClassDeclaration,
-  ) {
+  ): void {
     if (node.type === "VariableDeclaration") {
       if (node.kind === "var" && this.block && this.parent) {
         this.parent.add_declaration(node);

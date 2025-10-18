@@ -1,6 +1,9 @@
 import { StringFromCharCode } from "./primordials.js";
 
-export function StringFromCharCodes(codes: ArrayLike<number>, length: number) {
+export function StringFromCharCodes(
+  codes: ArrayLike<number>,
+  length: number,
+): string {
   let str = "";
   let i: number = 0;
   for (; i + 15 < length; i += 16) {

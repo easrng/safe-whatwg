@@ -71,7 +71,7 @@ function op_encoding_normalize_label(label: string) {
 let isTextDecoder: (v: object) => v is TextDecoder;
 const EMPTY = new Uint8Array();
 const converters: Safe<typeof webidl.converters> = webidl.converters;
-class TextDecoder {
+export class TextDecoder {
   static {
     // deno-lint-ignore prefer-primordials
     isTextDecoder = (v) => #encoding in v;
@@ -300,7 +300,7 @@ class TextDecoder {
 webidl.configureInterface(TextDecoder, "TextDecoder");
 
 let isTextEncoder: (v: object) => v is TextEncoder;
-class TextEncoder {
+export class TextEncoder {
   #brand = undefined;
   static {
     // deno-lint-ignore prefer-primordials
@@ -430,5 +430,3 @@ converters.TextDecodeOptions = webidl.createDictionaryConverter(
     },
   ],
 );
-
-export { TextDecoder, TextEncoder };

@@ -651,7 +651,7 @@ interface URLSearchParamsIterator<T>
 
 const converters: Safe<typeof webidl.converters> = webidl.converters;
 
-class URLSearchParams {
+export class URLSearchParams {
   static {
     // deno-lint-ignore prefer-primordials
     isURLSearchParams = (v) => #toString in v;
@@ -717,7 +717,7 @@ class URLSearchParams {
     );
   }
 
-  append(name: string, value: string) {
+  append(name: string, value: string): undefined {
     webidl.assertBranded(this, isURLSearchParams);
     const prefix = "Failed to execute 'append' on 'URLSearchParams'";
     webidl.requiredArguments(arguments.length, 2, prefix);
@@ -727,7 +727,7 @@ class URLSearchParams {
     this.#updateUrlSearch();
   }
 
-  delete(name: string, value: string | undefined = undefined) {
+  delete(name: string, value: string | undefined = undefined): undefined {
     webidl.assertBranded(this, isURLSearchParams);
     const prefix = "Failed to execute 'append' on 'URLSearchParams'";
     webidl.requiredArguments(arguments.length, 1, prefix);
@@ -804,7 +804,7 @@ class URLSearchParams {
     );
   }
 
-  set(name: string, value: string) {
+  set(name: string, value: string): undefined {
     webidl.assertBranded(this, isURLSearchParams);
     const prefix = "Failed to execute 'set' on 'URLSearchParams'";
     webidl.requiredArguments(arguments.length, 2, prefix);
@@ -841,7 +841,7 @@ class URLSearchParams {
     this.#updateUrlSearch();
   }
 
-  sort() {
+  sort(): undefined {
     webidl.assertBranded(this, isURLSearchParams);
     ArrayPrototypeSort(
       this.#listMap,
@@ -927,7 +927,7 @@ const trailingSpace = new SafeRegExp(/\u0020+$/u);
 
 let isURL: (v: object) => v is URL;
 
-class URL {
+export class URL {
   static {
     // deno-lint-ignore prefer-primordials
     isURL = (v) => #href in v;
@@ -1338,5 +1338,3 @@ class URL {
 }
 
 webidl.configureInterface(URL, "URL");
-
-export { URL, URLSearchParams };

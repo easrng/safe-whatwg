@@ -60,7 +60,7 @@ const converters: Safe<typeof webidl.converters> = webidl.converters;
 
 // Defined in WebIDL 4.3.
 // https://webidl.spec.whatwg.org/#idl-DOMException
-class DOMException {
+export class DOMException {
   // https://webidl.spec.whatwg.org/#dom-domexception-domexception
   constructor(message = "", name = "Error") {
     message = converters.DOMString(
@@ -144,5 +144,3 @@ for (let i = 0; i < names.length;) {
   ObjectDefineProperty(DOMException, nc, desc);
   ObjectDefineProperty(DOMException.prototype, nc, desc);
 }
-
-export { DOMException };

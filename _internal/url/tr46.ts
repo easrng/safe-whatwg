@@ -390,7 +390,7 @@ export function toASCII(
     transitionalProcessing = false,
     ignoreInvalidPunycode = false,
   }: ToASCIIOptions = ObjectCreate(null),
-) {
+): string | null {
   const result: Safe<ReturnType<typeof processing>> = processing(domainName, {
     checkHyphens,
     checkBidi,
@@ -478,7 +478,10 @@ export function toUnicode(
     transitionalProcessing = false,
     ignoreInvalidPunycode = false,
   }: Options = ObjectCreate(null),
-) {
+): {
+  domain: string;
+  error: boolean;
+} {
   const result: Safe<ReturnType<typeof processing>> = processing(domainName, {
     checkHyphens,
     checkBidi,

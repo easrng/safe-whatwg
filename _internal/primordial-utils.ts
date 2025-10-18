@@ -343,7 +343,7 @@ const SafePromise = /* @__PURE__ */ (() =>
     },
   ))();
 
-export const ArrayPrototypeToString = (thisArray: unknown[]) =>
+export const ArrayPrototypeToString = (thisArray: unknown[]): string =>
   ArrayPrototypeJoin(thisArray);
 
 // export const TypedArrayPrototypeToString = (thisArray) =>
@@ -356,7 +356,8 @@ export const PromisePrototypeCatch = (
     | ((reason: unknown) => unknown | PromiseLike<unknown>)
     | null
     | undefined,
-) => PromisePrototypeThen(thisPromise, undefined, onRejected);
+): globalThis.Promise<unknown> =>
+  PromisePrototypeThen(thisPromise, undefined, onRejected);
 
 const arrayToSafePromiseIterable = <T>(
   array: Array<T | PromiseLike<T>>,
@@ -441,7 +442,7 @@ export const SafePromisePrototypeFinally = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   thisPromise: Promise<any>,
   onFinally: (() => void) | undefined | null,
-) =>
+): globalThis.Promise<unknown> =>
   // Wrapping on a new Promise is necessary to not expose the SafePromise
   // prototype to user-land.
   new Promise((a, b) =>
@@ -451,7 +452,7 @@ export const SafePromisePrototypeFinally = (
       .then(a, b)
   );
 
-export function isNonSharedArrayBuffer(value: unknown) {
+export function isNonSharedArrayBuffer(value: unknown): value is ArrayBuffer {
   try {
     // This will throw on SharedArrayBuffers, but not detached ArrayBuffers.
     // (The spec says it should throw, but the spec conflicts with implementations: https://github.com/tc39/ecma262/issues/678)
@@ -471,7 +472,7 @@ export function isSharedArrayBuffer(
     return false;
   }
 }
-export function isTypedArray(value: unknown) {
+export function isTypedArray(value: unknown): value is ArrayBufferView {
   try {
     TypedArrayPrototypeGetBuffer(value);
     return true;
@@ -479,7 +480,7 @@ export function isTypedArray(value: unknown) {
     return false;
   }
 }
-export function isArrayBufferDetached(value: unknown) {
+export function isArrayBufferDetached(value: unknown): boolean {
   try {
     // @ts-expect-error using as validator, throwing is expected
     new Uint8Array(value);
@@ -488,7 +489,7 @@ export function isArrayBufferDetached(value: unknown) {
     return true;
   }
 }
-export function isDataView(value: unknown) {
+export function isDataView(value: unknown): value is DataView {
   try {
     DataViewPrototypeGetByteLength(value);
     return true;
@@ -496,7 +497,7 @@ export function isDataView(value: unknown) {
     return false;
   }
 }
-export function isSet(value: unknown) {
+export function isSet(value: unknown): value is Set<unknown> {
   try {
     SetPrototypeHas(value, null);
     return true;
@@ -504,7 +505,7 @@ export function isSet(value: unknown) {
     return false;
   }
 }
-export function isMap(value: unknown) {
+export function isMap(value: unknown): value is Map<unknown, unknown> {
   try {
     MapPrototypeHas(value, null);
     return true;

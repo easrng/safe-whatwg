@@ -154,7 +154,7 @@ const adapt = function (delta: number, numPoints: number, firstTime: boolean) {
  * @param {String} input The Punycode string of ASCII-only symbols.
  * @returns {String} The resulting string of Unicode symbols.
  */
-export const punycodeDecode = function (input: string) {
+export const punycodeDecode = function (input: string): string {
   // Don't use UCS-2.
   const output: number[] = [];
   const inputLength = input.length;
@@ -247,7 +247,7 @@ export const punycodeDecode = function (input: string) {
  * @param {String} input The string of Unicode symbols.
  * @returns {String} The resulting Punycode string of ASCII-only symbols.
  */
-export const punycodeEncode = function (inputStr: string) {
+export const punycodeEncode = function (inputStr: string): string {
   const output: string[] = [];
 
   // Convert the input in UCS-2 to an array of Unicode code points.

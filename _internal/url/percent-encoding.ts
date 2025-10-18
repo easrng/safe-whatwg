@@ -19,7 +19,7 @@ import { utf8Encode } from "../utf8.ts";
 import { isASCIIHex } from "./infra.ts";
 
 // https://url.spec.whatwg.org/#percent-encode
-function percentEncode(c: number) {
+function percentEncode(c: number): string {
   let hex: string = StringPrototypeToUpperCase(NumberPrototypeToString(c, 16));
   if (hex.length === 1) {
     hex = `0${hex}`;
@@ -29,7 +29,7 @@ function percentEncode(c: number) {
 }
 
 // https://url.spec.whatwg.org/#percent-decode
-function percentDecodeBytes(input: Uint8Array) {
+function percentDecodeBytes(input: Uint8Array): Uint8Array {
   const length = TypedArrayPrototypeGetByteLength(input);
   const output = new Uint8Array(length);
   let outputIndex = 0;
@@ -56,13 +56,13 @@ function percentDecodeBytes(input: Uint8Array) {
 }
 
 // https://url.spec.whatwg.org/#string-percent-decode
-function percentDecodeString(input: string) {
+function percentDecodeString(input: string): Uint8Array {
   const bytes = utf8Encode(input);
   return percentDecodeBytes(bytes);
 }
 
 // https://url.spec.whatwg.org/#c0-control-percent-encode-set
-function isC0ControlPercentEncode(c: number) {
+function isC0ControlPercentEncode(c: number): boolean {
   return c <= 0x1f || c > 0x7e;
 }
 
@@ -76,7 +76,7 @@ const extraFragmentPercentEncodeSet: Safe<Set<number>> =
       62, /* > */
       96, /* ` */
     ]))();
-function isFragmentPercentEncode(c: number) {
+function isFragmentPercentEncode(c: number): boolean {
   return isC0ControlPercentEncode(c) || extraFragmentPercentEncodeSet.has(c);
 }
 
@@ -90,12 +90,12 @@ const extraQueryPercentEncodeSet: Safe<Set<number>> =
       60, /* < */
       62, /* > */
     ]))();
-function isQueryPercentEncode(c: number) {
+function isQueryPercentEncode(c: number): boolean {
   return isC0ControlPercentEncode(c) || extraQueryPercentEncodeSet.has(c);
 }
 
 // https://url.spec.whatwg.org/#special-query-percent-encode-set
-function isSpecialQueryPercentEncode(c: number) {
+function isSpecialQueryPercentEncode(c: number): boolean {
   return isQueryPercentEncode(c) || c === 39 /* ' */;
 }
 
@@ -109,7 +109,7 @@ const extraPathPercentEncodeSet: Safe<Set<number>> =
       125, /* } */
       94, /* ^ */
     ]))();
-function isPathPercentEncode(c: number) {
+function isPathPercentEncode(c: number): boolean {
   return isQueryPercentEncode(c) || extraPathPercentEncodeSet.has(c);
 }
 
@@ -127,7 +127,7 @@ const extraUserinfoPercentEncodeSet: Safe<Set<number>> =
       93, /* ] */
       124, /* | */
     ]))();
-function isUserinfoPercentEncode(c: number) {
+function isUserinfoPercentEncode(c: number): boolean {
   return isPathPercentEncode(c) || extraUserinfoPercentEncodeSet.has(c);
 }
 
@@ -141,7 +141,7 @@ const extraComponentPercentEncodeSet: Safe<Set<number>> =
       43, /* + */
       44, /* , */
     ]))();
-function isComponentPercentEncode(c: number) {
+function isComponentPercentEncode(c: number): boolean {
   return isUserinfoPercentEncode(c) || extraComponentPercentEncodeSet.has(c);
 }
 
@@ -155,7 +155,7 @@ const extraURLEncodedPercentEncodeSet: Safe<Set<number>> =
       41, /* ) */
       126, /* ~ */
     ]))();
-function isURLEncodedPercentEncode(c: number) {
+function isURLEncodedPercentEncode(c: number): boolean {
   return isComponentPercentEncode(c) || extraURLEncodedPercentEncodeSet.has(c);
 }
 
@@ -167,7 +167,7 @@ function isURLEncodedPercentEncode(c: number) {
 function utf8PercentEncodeCodePointInternal(
   codePoint: string,
   percentEncodePredicate: (c: number) => boolean,
-) {
+): string {
   const bytes = utf8Encode(codePoint);
   let output = "";
   for (let i = 0; i < TypedArrayPrototypeGetByteLength(bytes); i++) {
@@ -186,7 +186,7 @@ function utf8PercentEncodeCodePointInternal(
 function utf8PercentEncodeCodePoint(
   codePoint: number,
   percentEncodePredicate: (c: number) => boolean,
-) {
+): string {
   return utf8PercentEncodeCodePointInternal(
     StringFromCodePoint(codePoint),
     percentEncodePredicate,
@@ -199,7 +199,7 @@ function utf8PercentEncodeString(
   input: string,
   percentEncodePredicate: (c: number) => boolean,
   spaceAsPlus = false,
-) {
+): string {
   let output = "";
   for (const codePoint of new SafeStringIterator(input)) {
     if (spaceAsPlus && codePoint === " ") {

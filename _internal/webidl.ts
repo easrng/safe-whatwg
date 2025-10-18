@@ -96,7 +96,7 @@ function makeException(
   message: string,
   prefix?: string,
   context?: string,
-) {
+): Error {
   return new ErrorType(
     `${prefix ? prefix + ": " : ""}${context ? context : "Value"} ${message}`,
   );
@@ -109,7 +109,7 @@ function toNumber(value: unknown) {
   return Number(value);
 }
 
-function type(V: unknown) {
+function type(V: unknown): string {
   if (V === null) {
     return "Null";
   }
@@ -1722,7 +1722,7 @@ function assertBranded<C extends object>(
   }
 }
 
-function illegalConstructor() {
+function illegalConstructor(): never {
   throw new TypeError("Illegal constructor");
 }
 
@@ -1882,7 +1882,7 @@ function mixinPairIterable<
 function configureInterface<N extends string>(
   interface_: Safe<{ prototype: object; name: N }>,
   name: N,
-) {
+): undefined {
   configureProperties(interface_);
   configureProperties(interface_.prototype);
   const d = {
@@ -1933,7 +1933,7 @@ function setlike(
   obj: { [setlikeInner]: primordials.Set<unknown> },
   assertion: (v: object) => v is object,
   readonly: boolean,
-) {
+): undefined {
   ObjectDefineProperties(obj, {
     size: {
       __proto__: null,

@@ -498,7 +498,9 @@ function findTheIPv6AddressCompressedPieceIndex(address: number[]) {
   return longestIndex;
 }
 
-export function serializeHost(host: string | number | number[] | null) {
+export function serializeHost(
+  host: string | number | number[] | null,
+): string | null {
   if (typeof host === "number") {
     return serializeIPv4(host);
   }
@@ -579,7 +581,7 @@ function includesCredentials(url: Safe<URLRecord>) {
   return url.username !== "" || url.password !== "";
 }
 
-export function cannotHaveAUsernamePasswordPort(url: Safe<URLRecord>) {
+export function cannotHaveAUsernamePasswordPort(url: Safe<URLRecord>): boolean {
   return url.host === null || url.host === "" || url.scheme === "file";
 }
 
@@ -1473,7 +1475,10 @@ export function parseFragment(
   return true;
 }
 
-export function serializeURL(url: Safe<URLRecord>, excludeFragment?: boolean) {
+export function serializeURL(
+  url: Safe<URLRecord>,
+  excludeFragment?: boolean,
+): string {
   let output = `${url.scheme}:`;
   if (url.host !== null) {
     output += "//";
@@ -1532,7 +1537,7 @@ function serializeOrigin(
   return result;
 }
 
-export function serializePath(url: Safe<URLRecord>) {
+export function serializePath(url: Safe<URLRecord>): string {
   if (hasAnOpaquePath(url)) {
     return url.path;
   }
@@ -1544,7 +1549,7 @@ export function serializePath(url: Safe<URLRecord>) {
   return output;
 }
 
-export function serializeURLOrigin(url: Safe<URLRecord>) {
+export function serializeURLOrigin(url: Safe<URLRecord>): string {
   // https://url.spec.whatwg.org/#concept-url-origin
   switch (url.scheme) {
     case "blob": {
@@ -1591,7 +1596,7 @@ export function basicURLParse(
     url?: URLRecord;
     stateOverride?: StateParser | null | undefined;
   }> = empty,
-) {
+): URLRecord | null {
   const usm: Safe<URLStateMachine> = new URLStateMachine(
     input,
     options.baseURL,
@@ -1606,10 +1611,16 @@ export function basicURLParse(
   return usm.url;
 }
 
-export function setTheUsername(url: Safe<URLRecord>, username: string) {
+export function setTheUsername(
+  url: Safe<URLRecord>,
+  username: string,
+): undefined {
   url.username = utf8PercentEncodeString(username, isUserinfoPercentEncode);
 }
 
-export function setThePassword(url: Safe<URLRecord>, password: string) {
+export function setThePassword(
+  url: Safe<URLRecord>,
+  password: string,
+): undefined {
   url.password = utf8PercentEncodeString(password, isUserinfoPercentEncode);
 }
